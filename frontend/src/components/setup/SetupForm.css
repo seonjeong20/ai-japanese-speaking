@@ -1,0 +1,283 @@
+/*
+ * 일반 회화 설정 / 면접 회화 설정 화면이 공유하는 스타일입니다.
+ * 두 화면 모두 이 파일을 import해서 동일한 layout·컴포넌트 스타일을 재사용합니다.
+ */
+
+.setup-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+/* Header */
+
+.setup-page__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.setup-page__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.setup-page__back:hover {
+  background: var(--color-surface);
+}
+
+.setup-page__back:active {
+  transform: scale(0.96);
+}
+
+.setup-page__back:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.setup-page__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setup-page__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.setup-page__subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+}
+
+/* Settings card */
+
+.setup-page__card {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  padding: 32px;
+  background: var(--color-white);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.setup-page__grid {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Setting field (label + select/input/textarea) */
+
+.setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.setting-field__label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setting-field__label-icon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.setting-field__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* Text input (자유 입력 + datalist 추천) */
+
+.setting-input {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--color-text-primary);
+  transition: border-color 150ms ease;
+}
+
+.setting-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.setting-input:hover {
+  border-color: var(--color-icon-muted);
+}
+
+.setting-input:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+/* Textarea */
+
+.setup-page__textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 14px 16px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  resize: vertical;
+  transition: border-color 150ms ease;
+}
+
+.setup-page__textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.setup-page__textarea:hover {
+  border-color: var(--color-icon-muted);
+}
+
+.setup-page__textarea:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.setup-page__divider {
+  width: 100%;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* Segmented control (난이도 / 면접 유형 / 자막) */
+
+.segmented-control {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.segmented-control__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.segmented-control__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented-control__chip {
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+
+.segmented-control__chip:hover {
+  border-color: var(--color-icon-muted);
+}
+
+.segmented-control__chip:active {
+  transform: scale(0.97);
+}
+
+.segmented-control__chip:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.segmented-control__chip--selected {
+  background: var(--color-lime);
+  border-color: var(--color-lime);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+/* CTA */
+
+.setup-page__cta {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 16px;
+  background: var(--color-lime);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 16.5px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    filter 180ms ease,
+    transform 150ms ease;
+}
+
+.setup-page__cta:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.setup-page__cta:active {
+  transform: scale(0.98);
+}
+
+.setup-page__cta:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+/* Responsive fallback for narrow viewports */
+
+@media (max-width: 700px) {
+  .setup-page__grid {
+    flex-direction: column;
+  }
+
+  .setup-page__card {
+    padding: 24px;
+  }
+}

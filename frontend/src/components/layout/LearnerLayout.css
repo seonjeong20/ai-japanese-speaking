@@ -1,0 +1,23 @@
+.learner-layout {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--color-white);
+}
+
+.learner-layout__content {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 48px;
+}
+
+@media (max-width: 960px) {
+  .learner-layout {
+    flex-direction: column;
+  }
+
+  .learner-layout__content {
+    padding: 24px;
+  }
+}

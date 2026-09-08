@@ -1,0 +1,401 @@
+/*
+ * The Sign In / Sign Up sliding-panel interaction below is adapted from the
+ * "Sign in and Sign up page" project by BOSS0exe
+ * (https://github.com/BOSS0exe/Sign-in-and-Sign-up-page), used under the
+ * MIT License. The transform/overlay mechanics were reimplemented from
+ * scratch as React components and CSS classes for this codebase.
+ */
+
+.auth-page {
+  flex: 1;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: var(--color-background);
+}
+
+.auth-container {
+  position: relative;
+  width: 920px;
+  max-width: 100%;
+  min-height: 700px;
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* Form panels (Sign In / Sign Up) */
+
+.form-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition:
+    transform 0.6s ease-in-out,
+    opacity 0.6s ease-in-out;
+}
+
+.form-panel--sign-in {
+  z-index: 2;
+}
+
+.form-panel--sign-up {
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.auth-container--sign-up .form-panel--sign-in {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-container--sign-up .form-panel--sign-up {
+  transform: translateX(100%);
+  opacity: 1;
+  z-index: 5;
+  pointer-events: auto;
+  animation: auth-panel-reveal 0.6s;
+}
+
+@keyframes auth-panel-reveal {
+  0%,
+  49.9% {
+    opacity: 0;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Overlay (charcoal brand panel) */
+
+.overlay-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transition: transform 0.6s ease-in-out;
+  z-index: 100;
+}
+
+.auth-container--sign-up .overlay-container {
+  transform: translateX(-100%);
+}
+
+.overlay {
+  position: relative;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: var(--color-charcoal);
+  transform: translateX(0);
+  transition: transform 0.6s ease-in-out;
+}
+
+.auth-container--sign-up .overlay {
+  transform: translateX(50%);
+}
+
+.overlay-panel {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 64px 56px;
+  color: var(--color-white);
+  transition: transform 0.6s ease-in-out;
+}
+
+.overlay-panel--left {
+  left: 0;
+  transform: translateX(-20%);
+}
+
+.auth-container--sign-up .overlay-panel--left {
+  transform: translateX(0);
+}
+
+.overlay-panel--right {
+  right: 0;
+  transform: translateX(0);
+}
+
+.auth-container--sign-up .overlay-panel--right {
+  transform: translateX(20%);
+}
+
+.overlay-panel__curve {
+  position: absolute;
+  left: 40px;
+  bottom: 28px;
+  width: 140px;
+  height: 140px;
+}
+
+.overlay-panel__title {
+  margin: 0;
+  width: 100%;
+  max-width: 348px;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.34;
+}
+
+.overlay-panel__text {
+  margin: 0;
+  width: 100%;
+  max-width: 348px;
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.62;
+}
+
+.overlay-panel__prompt {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.62;
+}
+
+/* Shared logo */
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.auth-logo__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--color-charcoal);
+  color: var(--color-lime);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.auth-logo__text {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* Badge */
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-lime);
+  color: var(--color-charcoal);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.66px;
+}
+
+/* Form */
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  padding: 64px 56px;
+}
+
+.auth-form--compact {
+  gap: 14px;
+  padding: 48px 56px;
+}
+
+.auth-form__title {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+
+.auth-form__title--sm {
+  font-size: 23px;
+}
+
+.auth-form__subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-form--compact .auth-field {
+  gap: 6px;
+}
+
+.auth-field__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.auth-form--compact .auth-field__label {
+  font-size: 12px;
+}
+
+.auth-field__input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.auth-form--compact .auth-field__input {
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+.auth-field__input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.auth-field__input:focus {
+  outline: none;
+  border-color: var(--color-charcoal);
+}
+
+.auth-form__forgot-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.auth-form__switch {
+  margin: 0;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.auth-form--compact .auth-form__switch {
+  font-size: 12px;
+}
+
+/* Links & buttons */
+
+.auth-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.auth-link--strong {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.auth-button {
+  border: none;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-button--primary {
+  width: 100%;
+  padding: 16px;
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  font-size: 16px;
+}
+
+.auth-button--cta {
+  padding: 15px 28px;
+  background: var(--color-lime);
+  color: var(--color-charcoal);
+  font-size: 15px;
+}
+
+/* Small screens: fall back to a single stacked form, no sliding panels */
+
+@media (max-width: 760px) {
+  .auth-page {
+    padding: 24px 16px;
+  }
+
+  .auth-container {
+    width: 100%;
+    min-height: auto;
+    border-radius: 24px;
+  }
+
+  .overlay-container {
+    display: none;
+  }
+
+  .form-panel,
+  .auth-container--sign-up .form-panel--sign-in,
+  .auth-container--sign-up .form-panel--sign-up {
+    position: static;
+    width: 100%;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition: none;
+    animation: none;
+  }
+
+  .form-panel--sign-up,
+  .auth-container--sign-up .form-panel--sign-in {
+    display: none;
+  }
+
+  .auth-container--sign-up .form-panel--sign-up {
+    display: flex;
+  }
+
+  .auth-form,
+  .auth-form--compact {
+    padding: 40px 24px;
+  }
+}
