@@ -281,3 +281,89 @@ export function CheckIcon({ size = 18, className }) {
     </svg>
   )
 }
+
+export function CheckSmallIcon({ size = 12, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2.5 6L5 8.5L10 3.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function ClockIcon({ size = 17, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M8.5 4.95833V8.5L10.625 9.91667M14.1667 8.5C14.1667 10.0029 13.5696 11.4442 12.5069 12.5069C11.4442 13.5696 10.0029 14.1667 8.5 14.1667C6.99711 14.1667 5.55577 13.5696 4.49306 12.5069C3.43036 11.4442 2.83333 10.0029 2.83333 8.5C2.83333 6.99711 3.43036 5.55577 4.49306 4.49306C5.55577 3.43036 6.99711 2.83333 8.5 2.83333C10.0029 2.83333 11.4442 3.43036 12.5069 4.49306C13.5696 5.55577 14.1667 6.99711 14.1667 8.5Z"
+        stroke="currentColor"
+        strokeWidth="1.275"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function MessageIcon({ size = 17, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M2.83333 3.54167H14.1667V10.625H5.66667L2.83333 13.4583V3.54167Z"
+        stroke="currentColor"
+        strokeWidth="1.275"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function EditIcon({ size = 17, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M2.83333 14.1667H5.66667L12.75 7.08333L9.91667 4.25L2.83333 11.3333V14.1667Z"
+        stroke="currentColor"
+        strokeWidth="1.275"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function SwapArrowIcon({ size = 15, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3.125 7.5H11.25M8.125 3.75L11.875 7.5L8.125 11.25" stroke="currentColor" strokeWidth="1.125" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function StarIcon({ size = 18, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M9 2.25L10.95 6.675L15.75 7.125L12.15 10.35L13.2 15.075L9 12.75L4.8 15.075L5.85 10.35L2.25 7.125L7.05 6.675L9 2.25Z"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function RefreshIcon({ size = 16, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M6.66667 6.66667H2.66667V2.66667M2.66667 6.66667C2.68926 5.54693 3.06379 4.46272 3.73714 3.56777C4.41048 2.67282 5.34848 2.01256 6.41812 1.6806C7.48776 1.34865 8.63476 1.36184 9.69648 1.71832C10.7582 2.0748 11.6808 2.75647 12.3333 3.66667M9.33333 9.33333H13.3333V13.3333M13.3333 9.33333C13.3107 10.4531 12.9362 11.5373 12.2629 12.4322C11.5895 13.3272 10.6515 13.9874 9.58188 14.3194C8.51224 14.6514 7.36524 14.6382 6.30352 14.2817C5.2418 13.9252 4.31925 13.2435 3.66667 12.3333"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}

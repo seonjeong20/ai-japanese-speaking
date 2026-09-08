@@ -1,0 +1,244 @@
+/* KPI row */
+
+.manager-kpi-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.manager-kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 24px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+}
+
+.manager-kpi-card__label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.manager-kpi-card__value {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.manager-kpi-card__helper {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Bottom row */
+
+.manager-dashboard-bottom-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.manager-weekly-usage-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 24px;
+}
+
+.manager-weekly-usage-card__week-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.manager-weekly-usage-card__stat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.manager-weekly-usage-card__total {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.manager-weekly-usage-card__helper {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-secondary);
+}
+
+/* Admin alerts card */
+
+.manager-alerts-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+}
+
+.manager-alerts-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manager-alerts-card__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--color-lime);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.manager-alerts-card__view-all {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.manager-alerts-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.manager-alert {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-track);
+}
+
+.manager-alert:last-child {
+  border-bottom: none;
+}
+
+.manager-alert__badge {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.manager-alert__badge::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  transform: translate(-50%, -50%);
+}
+
+.manager-alert__badge--pending {
+  background: var(--color-lime);
+}
+
+.manager-alert__badge--pending::after {
+  background: var(--color-charcoal);
+}
+
+.manager-alert__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.manager-alert__title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.manager-alert__meta {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.manager-alert__time {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.manager-alert__action {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.manager-alert__action:hover {
+  background: var(--color-surface);
+}
+
+.manager-alert__action:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .manager-kpi-row {
+    flex-wrap: wrap;
+  }
+
+  .manager-kpi-card {
+    flex: 1 1 calc(50% - 10px);
+  }
+}
+
+@media (max-width: 960px) {
+  .manager-dashboard-bottom-row {
+    flex-direction: column;
+  }
+}

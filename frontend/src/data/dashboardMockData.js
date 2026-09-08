@@ -1,5 +1,5 @@
 export const currentUser = {
-  name: 'seonjeong',
+  name: 'skala',
   initial: 'S',
 }
 

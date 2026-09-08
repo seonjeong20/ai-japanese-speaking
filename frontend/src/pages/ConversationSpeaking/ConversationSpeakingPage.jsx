@@ -68,7 +68,7 @@ function ConversationSpeakingPage() {
   const handleBack = () => navigate('/conversation/setup')
   const handleEndClick = () => setEndModalOpen(true)
   const handleContinue = () => setEndModalOpen(false)
-  const handleConfirmEnd = () => navigate('/learning')
+  const handleConfirmEnd = () => navigate('/conversation/feedback')
 
   return (
     <LearnerLayout>

@@ -307,6 +307,12 @@
   outline-offset: 2px;
 }
 
+.speaking-primary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* Subtitle-off placeholder (자막 OFF일 때) */
 
 .speaking-subtitle-off {
@@ -346,6 +352,14 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--color-text-primary);
+  text-align: center;
+}
+
+.session-end-modal__subtitle {
+  margin: -12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
   text-align: center;
 }
 

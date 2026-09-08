@@ -270,6 +270,12 @@
   outline-offset: 2px;
 }
 
+.setup-page__cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* Responsive fallback for narrow viewports */
 
 @media (max-width: 700px) {

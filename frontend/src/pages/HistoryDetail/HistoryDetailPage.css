@@ -1,0 +1,5 @@
+.history-detail-not-found {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}

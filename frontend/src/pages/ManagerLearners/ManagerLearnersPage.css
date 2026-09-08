@@ -1,0 +1,438 @@
+.manager-learners-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.manager-learners-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manager-learners-page__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.manager-learners-page__subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* Status tabs */
+
+.manager-status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.manager-status-tabs__tab {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.manager-status-tabs__tab:hover {
+  background: var(--color-surface);
+}
+
+.manager-status-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.manager-status-tabs__tab--active {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  font-weight: 700;
+}
+
+.manager-status-tabs__tab--active:hover {
+  background: var(--color-charcoal);
+}
+
+/* Toolbar */
+
+.manager-learners-toolbar {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.manager-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 420px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+}
+
+.manager-search-box__input {
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.manager-search-box__input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+/* Table */
+
+.manager-table-card {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+}
+
+.manager-table__header,
+.manager-table__row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 1050px;
+  padding: 16px 28px;
+}
+
+.manager-table__header {
+  background: var(--color-surface);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.manager-table__row:last-of-type {
+  border-bottom: none;
+}
+
+.manager-table__row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.manager-table__col {
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 12px;
+}
+
+.manager-table__col--name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 200px;
+}
+
+.manager-table__col--email {
+  width: 240px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.manager-table__col--date {
+  width: 110px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.manager-table__col--count {
+  width: 90px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.manager-table__col--activity {
+  width: 130px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.manager-table__col--status {
+  width: 90px;
+}
+
+.manager-table__col--actions {
+  width: 188px;
+  position: relative;
+  overflow: visible;
+}
+
+.manager-table__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.manager-table__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manager-table__empty {
+  margin: 0;
+  padding: 32px 28px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+}
+
+/* Status pill */
+
+.manager-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.manager-status-pill--active {
+  background: var(--color-lime);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.manager-status-pill--pending {
+  background: var(--color-charcoal);
+  color: var(--color-lime);
+  font-weight: 700;
+}
+
+.manager-status-pill--inactive {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.manager-status-pill--rejected {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+/* Row actions */
+
+.manager-table__action-group {
+  display: flex;
+  gap: 8px;
+}
+
+.manager-table__button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.manager-table__button:hover {
+  background: var(--color-surface);
+}
+
+.manager-table__button:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.manager-table__button--approve {
+  border-color: var(--color-lime);
+  background: var(--color-lime);
+}
+
+.manager-table__button--approve:hover {
+  filter: brightness(1.08);
+}
+
+.manager-table__button--reject {
+  color: var(--color-text-secondary);
+}
+
+.manager-table__no-action {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Account menu (계정 관리 ▾) */
+
+.manager-account-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.manager-account-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  border: none;
+  background: transparent;
+  cursor: default;
+  padding: 0;
+}
+
+.manager-account-menu__panel {
+  position: absolute;
+  z-index: 11;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 140px;
+  padding: 4px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-panel);
+}
+
+.manager-account-menu__item {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.manager-account-menu__item:hover {
+  background: var(--color-surface);
+}
+
+.manager-account-menu__item:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+/* Pagination */
+
+.manager-pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.manager-pagination-row__summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.manager-pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manager-pager__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.manager-pager__arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.manager-pager__arrow:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.manager-pager__page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 16px;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.manager-pager__page:hover {
+  background: var(--color-surface);
+}
+
+.manager-pager__page:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+.manager-pager__page--active {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  font-weight: 700;
+}
+
+.manager-pager__page--active:hover {
+  background: var(--color-charcoal);
+}

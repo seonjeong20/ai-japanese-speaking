@@ -1,6 +1,14 @@
 import { useEffect } from 'react'
 
-function SessionEndModal({ open, onContinue, onEnd }) {
+function SessionEndModal({
+  open,
+  onContinue,
+  onEnd,
+  title = '학습을 종료하시겠습니까?',
+  subtitle,
+  continueLabel = '계속하기',
+  confirmLabel = '종료하기',
+}) {
   useEffect(() => {
     if (!open) return undefined
 
@@ -26,8 +34,10 @@ function SessionEndModal({ open, onContinue, onEnd }) {
         onClick={(event) => event.stopPropagation()}
       >
         <p id="session-end-modal-title" className="session-end-modal__title">
-          학습을 종료하시겠습니까?
+          {title}
         </p>
+
+        {subtitle && <p className="session-end-modal__subtitle">{subtitle}</p>}
 
         <div className="session-end-modal__actions">
           <button
@@ -35,14 +45,14 @@ function SessionEndModal({ open, onContinue, onEnd }) {
             className="session-end-modal__button session-end-modal__button--ghost"
             onClick={onContinue}
           >
-            계속하기
+            {continueLabel}
           </button>
           <button
             type="button"
             className="session-end-modal__button session-end-modal__button--primary"
             onClick={onEnd}
           >
-            종료하기
+            {confirmLabel}
           </button>
         </div>
       </div>

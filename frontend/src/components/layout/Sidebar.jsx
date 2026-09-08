@@ -9,12 +9,15 @@ import './Sidebar.css'
 const NAV_ITEMS = [
   { label: 'Dashboard', to: '/dashboard', icon: DashboardIcon, implemented: true, matchPaths: ['/dashboard'] },
   { label: 'Learning', to: '/learning', icon: LearningIcon, implemented: true, matchPaths: ['/learning', '/conversation', '/interview'] },
-  { label: 'My History', to: '/history', icon: HistoryIcon, implemented: false, matchPaths: ['/history'] },
-  { label: 'Settings', to: '/settings', icon: SettingsIcon, implemented: false, matchPaths: ['/settings'] },
+  { label: 'My History', to: '/history', icon: HistoryIcon, implemented: true, matchPaths: ['/history'] },
+  { label: 'Settings', to: '/settings', icon: SettingsIcon, implemented: true, matchPaths: ['/settings'] },
 ]
 
-function Sidebar() {
+// `items`/`profile`을 넘기지 않으면 기존 Learner Sidebar와 완전히 동일하게 동작합니다.
+// Manager 등 다른 역할의 Sidebar가 필요하면 이 두 prop만 다르게 넘겨서 재사용합니다.
+function Sidebar({ items = NAV_ITEMS, profile }) {
   const { pathname } = useLocation()
+  const profileInfo = profile ?? { name: currentUser.name, initial: currentUser.initial }
 
   return (
     <aside className="sidebar">
@@ -24,7 +27,7 @@ function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(({ label, to, icon: Icon, implemented, matchPaths }) => {
+        {items.map(({ label, to, icon: Icon, implemented, matchPaths }) => {
           const isActive = matchPaths.some((path) => pathname.startsWith(path))
           const className = `sidebar-nav__item${isActive ? ' sidebar-nav__item--active' : ''}`
 
@@ -47,8 +50,8 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-profile">
-        <span className="sidebar-profile__avatar">{currentUser.initial}</span>
-        <span className="sidebar-profile__name">{currentUser.name}</span>
+        <span className="sidebar-profile__avatar">{profileInfo.initial}</span>
+        <span className="sidebar-profile__name">{profileInfo.name}</span>
         <ChevronDownIcon size={16} className="sidebar-profile__chevron" />
       </div>
     </aside>
