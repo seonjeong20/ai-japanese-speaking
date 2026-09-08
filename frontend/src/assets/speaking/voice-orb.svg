@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="220" height="220" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Orb Wrap" clip-path="url(#clip0_0_18)">
+<circle id="Ellipse" cx="110" cy="110" r="110" fill="#F5FBE8"/>
+<circle id="Ellipse_2" cx="110" cy="110" r="85" fill="#E4F4C0"/>
+<circle id="Ellipse_3" cx="110" cy="110" r="60" fill="#1B1B1B"/>
+<g id="icon">
+<path id="Vector" d="M102.917 108.583C102.917 110.462 103.663 112.264 104.991 113.592C106.32 114.92 108.121 115.667 110 115.667C111.879 115.667 113.68 114.92 115.009 113.592C116.337 112.264 117.083 110.462 117.083 108.583M110 119.917V124.167M110 114.25C111.127 114.25 112.208 113.802 113.005 113.005C113.802 112.208 114.25 111.127 114.25 110V101.5C114.25 100.373 113.802 99.2918 113.005 98.4948C112.208 97.6978 111.127 97.25 110 97.25C108.873 97.25 107.792 97.6978 106.995 98.4948C106.198 99.2918 105.75 100.373 105.75 101.5V110C105.75 111.127 106.198 112.208 106.995 113.005C107.792 113.802 108.873 114.25 110 114.25Z" stroke="#C7F464" stroke-width="2.55" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_18">
+<rect width="220" height="220" fill="white"/>
+</clipPath>
+</defs>
+</svg>

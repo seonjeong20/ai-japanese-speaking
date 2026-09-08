@@ -30,8 +30,9 @@ function InterviewSetupPage() {
 
   const handleBack = () => navigate('/learning')
 
-  // Speaking 화면이 구현되면 이 핸들러에서 interviewSettings를 전달하며 이동시킬 예정입니다.
-  const handleStartInterview = () => {}
+  const handleStartInterview = () => {
+    navigate('/interview/speaking', { state: interviewSettings })
+  }
 
   return (
     <LearnerLayout>

@@ -251,3 +251,33 @@ export function DescriptionIcon({ size = 15, className }) {
     </svg>
   )
 }
+
+export function MicIcon({ size = 22, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M6.41667 10.0833C6.41667 11.2989 6.89955 12.4647 7.75909 13.3242C8.61864 14.1838 9.78442 14.6667 11 14.6667C12.2156 14.6667 13.3814 14.1838 14.2409 13.3242C15.1004 12.4647 15.5833 11.2989 15.5833 10.0833M11 17.4167V20.1667M11 13.75C11.7293 13.75 12.4288 13.4603 12.9445 12.9445C13.4603 12.4288 13.75 11.7293 13.75 11V5.5C13.75 4.77065 13.4603 4.07118 12.9445 3.55546C12.4288 3.03973 11.7293 2.75 11 2.75C10.2707 2.75 9.57118 3.03973 9.05546 3.55546C8.53973 4.07118 8.25 4.77065 8.25 5.5V11C8.25 11.7293 8.53973 12.4288 9.05546 12.9445C9.57118 13.4603 10.2707 13.75 11 13.75Z"
+        stroke="currentColor"
+        strokeWidth="1.65"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function EndCallIcon({ size = 16, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2.66667 2.66667L13.3333 13.3333M2.66667 13.3333L13.3333 2.66667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function CheckIcon({ size = 18, className }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3.75 9L7.5 12.75L15 5.25" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
