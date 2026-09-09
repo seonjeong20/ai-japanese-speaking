@@ -1,0 +1,1423 @@
+openapi: 3.0.3
+info:
+  title: AI Japanese Speaking Service API
+  version: 1.0.0
+  description: |
+    AI 일본어 Speaking 서비스의 1차 OpenAPI 명세입니다.
+    ERD/API 기준 문서의 38개 엔드포인트와 확정된 권한·상태 규칙을 반영합니다.
+    질문 수, 점수 산식, 페이징, JWT 갱신, 생성 실패 재시도 방식은 추후 확정 대상입니다.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Auth
+  - name: Users
+  - name: Speaking
+  - name: Conversations
+  - name: Interviews
+  - name: History
+  - name: Manager
+  - name: Admin
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Learner 또는 Manager 가입 신청
+      description: ADMIN 가입은 허용하지 않으며 기존 ACTIVE 기관의 ID만 받습니다.
+      security: []
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: 가입 신청 완료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: 공통 로그인
+      security: []
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 승인 대기, 가입 거절 또는 비활성 계정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: 현재 로그인 사용자와 권한 조회
+      operationId: getAuthMe
+      responses:
+        '200':
+          description: 현재 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/organizations/signup-options:
+    get:
+      tags: [Auth]
+      summary: 가입 가능한 ACTIVE 기관 목록
+      security: []
+      operationId: getSignupOrganizationOptions
+      responses:
+        '200':
+          description: 기관 선택지
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationOption'
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: 내 계정 정보 조회
+      operationId: getMyProfile
+      responses:
+        '200':
+          description: 내 계정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/users/me/preferences:
+    get:
+      tags: [Users]
+      summary: 기본 Speaking 설정 조회
+      operationId: getMyPreferences
+      responses:
+        '200':
+          description: 기본 설정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+    patch:
+      tags: [Users]
+      summary: 기본 Speaking 설정 변경
+      operationId: updateMyPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: 변경된 기본 설정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/users/me/password:
+    patch:
+      tags: [Users]
+      summary: 내 비밀번호 변경
+      operationId: changeMyPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/speaking/sessions/{sessionId}:
+    get:
+      tags: [Speaking]
+      summary: 내 Speaking 세션 공통 정보 조회
+      description: 로그인 사용자 소유 세션만 조회할 수 있습니다.
+      operationId: getSpeakingSession
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 세션 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakingSession'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/conversations:
+    post:
+      tags: [Conversations]
+      summary: 일반회화 시작
+      description: JWT 사용자로 Speaking 세션과 시작 당시 설정을 함께 생성합니다.
+      operationId: startConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationStartRequest'
+      responses:
+        '201':
+          description: 일반회화 시작됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakingSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/conversations/{sessionId}/turns:
+    post:
+      tags: [Conversations]
+      summary: 사용자 발화 제출 및 AI 응답 생성
+      operationId: createConversationTurn
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationTurnRequest'
+      responses:
+        '200':
+          description: 저장된 사용자·AI 메시지
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationTurnResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/conversations/{sessionId}/complete:
+    post:
+      tags: [Conversations]
+      summary: 일반회화 정상 종료 및 피드백 생성
+      operationId: completeConversation
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 종료 및 피드백 생성 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCompletionResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/conversations/{sessionId}/abort:
+    post:
+      tags: [Conversations]
+      summary: 일반회화 중도 종료
+      operationId: abortConversation
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 중도 종료됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCompletionResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/conversations/{sessionId}/feedback:
+    get:
+      tags: [Conversations]
+      summary: 일반회화 피드백 조회
+      operationId: getConversationFeedback
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 일반회화 피드백
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationFeedback'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/interviews:
+    post:
+      tags: [Interviews]
+      summary: 면접 시작 및 첫 질문 생성
+      description: 대상 국가·언어·피드백 언어는 서버가 JAPAN/JAPANESE/KOREAN으로 지정합니다.
+      operationId: startInterview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewStartRequest'
+      responses:
+        '201':
+          description: 면접 시작됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewStartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/interviews/{sessionId}/questions/{questionId}/answer:
+    post:
+      tags: [Interviews]
+      summary: 확정 답변 제출, 평가 및 다음 질문 결정
+      operationId: submitInterviewAnswer
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - $ref: '#/components/parameters/QuestionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewAnswerRequest'
+      responses:
+        '200':
+          description: 답변 저장 및 다음 질문 결정
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewAnswerResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/interviews/{sessionId}/complete:
+    post:
+      tags: [Interviews]
+      summary: 면접 정상 종료 및 전체 종합평가 생성
+      operationId: completeInterview
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 종료 및 종합평가 생성 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCompletionResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/interviews/{sessionId}/abort:
+    post:
+      tags: [Interviews]
+      summary: 면접 중도 종료
+      operationId: abortInterview
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 중도 종료됨
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCompletionResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/interviews/{sessionId}/feedback:
+    get:
+      tags: [Interviews]
+      summary: 면접 전체 및 답변별 피드백 조회
+      operationId: getInterviewFeedback
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 면접 피드백
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewFeedback'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/history:
+    get:
+      tags: [History]
+      summary: 내 학습 기록 목록
+      operationId: getMyHistory
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/SessionType'
+      responses:
+        '200':
+          description: 학습 기록
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HistoryItem'
+  /api/history/{sessionId}:
+    get:
+      tags: [History]
+      summary: 내 학습 기록 상세
+      description: sessionType에 따라 설정·Transcript·해당 모드 피드백을 조합합니다.
+      operationId: getMyHistoryDetail
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: 모드별 학습 상세
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/manager/dashboard:
+    get:
+      tags: [Manager]
+      summary: 내 기관 이용현황
+      operationId: getManagerDashboard
+      responses:
+        '200':
+          description: 기관 집계
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerDashboard'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/manager/learners:
+    get:
+      tags: [Manager]
+      summary: 같은 기관 학습자 목록
+      description: 개별 답변과 AI 피드백은 반환하지 않습니다.
+      operationId: getManagedLearners
+      parameters:
+        - $ref: '#/components/parameters/UserStatusQuery'
+        - $ref: '#/components/parameters/Keyword'
+      responses:
+        '200':
+          description: 학습자 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LearnerSummary'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/manager/learners/{userId}/approve:
+    patch:
+      tags: [Manager]
+      summary: 같은 기관 Learner 가입 승인
+      operationId: approveLearner
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/manager/learners/{userId}/reject:
+    patch:
+      tags: [Manager]
+      summary: 같은 기관 Learner 가입 거절
+      operationId: rejectLearner
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/manager/learners/{userId}/deactivate:
+    patch:
+      tags: [Manager]
+      summary: 같은 기관 Learner 비활성화
+      operationId: deactivateLearner
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/manager/learners/{userId}/activate:
+    patch:
+      tags: [Manager]
+      summary: 같은 기관 Learner 재활성화
+      operationId: activateLearner
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: 서비스 전체 이용현황
+      operationId: getAdminDashboard
+      responses:
+        '200':
+          description: 전체 집계
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboard'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/organizations:
+    get:
+      tags: [Admin]
+      summary: 기관 목록
+      operationId: getOrganizations
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OrganizationStatus'
+        - $ref: '#/components/parameters/Keyword'
+      responses:
+        '200':
+          description: 기관 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationSummary'
+    post:
+      tags: [Admin]
+      summary: 기관 생성
+      description: ACTIVE 상태로 생성하며 가입 선택 목록에 포함됩니다.
+      operationId: createOrganization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUpsertRequest'
+      responses:
+        '201':
+          description: 생성된 기관
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+  /api/admin/organizations/{organizationId}:
+    patch:
+      tags: [Admin]
+      summary: 기관명 수정
+      operationId: updateOrganization
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUpsertRequest'
+      responses:
+        '200':
+          description: 수정된 기관
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/organizations/{organizationId}/deactivate:
+    patch:
+      tags: [Admin]
+      summary: 기관 비활성화
+      operationId: deactivateOrganization
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrganizationStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/organizations/{organizationId}/activate:
+    patch:
+      tags: [Admin]
+      summary: 기관 재활성화
+      operationId: activateOrganization
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrganizationStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/managers:
+    get:
+      tags: [Admin]
+      summary: Manager 목록
+      operationId: getManagers
+      parameters:
+        - $ref: '#/components/parameters/UserStatusQuery'
+        - name: organizationId
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Manager 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ManagerSummary'
+  /api/admin/managers/{userId}/approve:
+    patch:
+      tags: [Admin]
+      summary: Manager 가입 승인
+      operationId: approveManager
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/managers/{userId}/reject:
+    patch:
+      tags: [Admin]
+      summary: Manager 가입 거절
+      operationId: rejectManager
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/managers/{userId}/deactivate:
+    patch:
+      tags: [Admin]
+      summary: Manager 비활성화
+      operationId: deactivateManager
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/managers/{userId}/activate:
+    patch:
+      tags: [Admin]
+      summary: Manager 재활성화
+      operationId: activateManager
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserStatusChanged'
+        '409':
+          $ref: '#/components/responses/Conflict'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    QuestionId:
+      name: questionId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    Keyword:
+      name: keyword
+      in: query
+      required: false
+      schema:
+        type: string
+    UserStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/UserStatus'
+  responses:
+    Message:
+      description: 처리 완료
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
+    UserStatusChanged:
+      description: 사용자 상태 변경 완료
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserStatusChangeResponse'
+    OrganizationStatusChanged:
+      description: 기관 상태 변경 완료
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Organization'
+    BadRequest:
+      description: 요청 값이 올바르지 않음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: 인증되지 않음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: 접근 권한 또는 소유권이 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 대상을 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: 현재 상태에서 처리할 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    UserRole:
+      type: string
+      enum: [LEARNER, MANAGER, ADMIN]
+    SignupRole:
+      type: string
+      enum: [LEARNER, MANAGER]
+    UserStatus:
+      type: string
+      enum: [PENDING, ACTIVE, REJECTED, INACTIVE]
+    OrganizationStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    SessionType:
+      type: string
+      enum: [CONVERSATION, INTERVIEW]
+    SessionStatus:
+      type: string
+      enum: [IN_PROGRESS, COMPLETED, ABORTED]
+    GenerationStatus:
+      type: string
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+    Difficulty:
+      type: string
+      enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+    SubtitleMode:
+      type: string
+      enum: [OFF, JAPANESE, JAPANESE_KOREAN]
+    QuestionKind:
+      type: string
+      enum: [INITIAL, FOLLOW_UP]
+    QuestionStatus:
+      type: string
+      enum: [SUGGESTED, ASKED, ANSWERED, SKIPPED]
+    SignupRequest:
+      type: object
+      required: [name, email, password, role, organizationId]
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          format: password
+        role:
+          $ref: '#/components/schemas/SignupRole'
+        organizationId:
+          type: integer
+          format: int64
+        department:
+          type: string
+          maxLength: 100
+          description: Manager일 때 사용
+    SignupResponse:
+      type: object
+      required: [userId, role, status, message]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        role:
+          $ref: '#/components/schemas/SignupRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        message:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    LoginResponse:
+      type: object
+      required: [accessToken, user]
+      properties:
+        accessToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    OrganizationOption:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    Organization:
+      type: object
+      required: [organizationId, name, status]
+      properties:
+        organizationId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrganizationStatus'
+    OrganizationSummary:
+      allOf:
+        - $ref: '#/components/schemas/Organization'
+        - type: object
+          properties:
+            managerCount:
+              type: integer
+            learnerCount:
+              type: integer
+            createdAt:
+              type: string
+              format: date-time
+    OrganizationUpsertRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+    User:
+      type: object
+      required: [id, name, email, role, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        department:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        organization:
+          allOf:
+            - $ref: '#/components/schemas/OrganizationOption'
+          nullable: true
+    UserPreferences:
+      type: object
+      required: [defaultDifficulty, defaultSubtitleMode]
+      properties:
+        defaultDifficulty:
+          $ref: '#/components/schemas/Difficulty'
+        defaultSubtitleMode:
+          $ref: '#/components/schemas/SubtitleMode'
+        message:
+          type: string
+    PasswordChangeRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
+    SpeakingSession:
+      type: object
+      required: [sessionId, sessionType, status, startedAt]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        sessionType:
+          $ref: '#/components/schemas/SessionType'
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationSeconds:
+          type: integer
+          nullable: true
+          minimum: 0
+    SessionCompletionResponse:
+      type: object
+      required: [sessionId, status]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationSeconds:
+          type: integer
+          nullable: true
+        feedbackGenerationStatus:
+          allOf:
+            - $ref: '#/components/schemas/GenerationStatus'
+          nullable: true
+          description: abort 응답에서는 null일 수 있음
+    ConversationStartRequest:
+      type: object
+      required: [difficulty, subtitleMode]
+      properties:
+        situation:
+          type: string
+          maxLength: 100
+        partnerRole:
+          type: string
+          maxLength: 100
+        partnerPersonality:
+          type: string
+          maxLength: 100
+        situationDescription:
+          type: string
+        difficulty:
+          $ref: '#/components/schemas/Difficulty'
+        subtitleMode:
+          $ref: '#/components/schemas/SubtitleMode'
+    ConversationTurnRequest:
+      type: object
+      required: [userMessage]
+      properties:
+        userMessage:
+          type: string
+          minLength: 1
+    Message:
+      type: object
+      required: [messageId, content]
+      properties:
+        messageId:
+          type: integer
+          format: int64
+        content:
+          type: string
+    TranscriptMessage:
+      allOf:
+        - $ref: '#/components/schemas/Message'
+        - type: object
+          required: [sequenceNo, speaker, messageType, createdAt]
+          properties:
+            sequenceNo:
+              type: integer
+            speaker:
+              type: string
+              enum: [USER, AI]
+            messageType:
+              type: string
+              example: CONVERSATION
+            createdAt:
+              type: string
+              format: date-time
+    ConversationTurnResponse:
+      type: object
+      required: [userMessage, aiMessage]
+      properties:
+        userMessage:
+          $ref: '#/components/schemas/Message'
+        aiMessage:
+          $ref: '#/components/schemas/Message'
+    ConversationCorrection:
+      type: object
+      required: [category, originalExpression, suggestedExpression]
+      properties:
+        messageId:
+          type: integer
+          format: int64
+          nullable: true
+        category:
+          type: string
+          enum: [GRAMMAR, VOCABULARY, NATURALNESS, EXPRESSION]
+        originalExpression:
+          type: string
+        suggestedExpression:
+          type: string
+        explanation:
+          type: string
+        displayOrder:
+          type: integer
+    ConversationFeedback:
+      type: object
+      required: [sessionId, generationStatus, corrections]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        generationStatus:
+          $ref: '#/components/schemas/GenerationStatus'
+        summary:
+          type: string
+        naturalnessComment:
+          type: string
+        grammarComment:
+          type: string
+        vocabularyComment:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        nextTip:
+          type: string
+        corrections:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationCorrection'
+    InterviewStartRequest:
+      type: object
+      required: [jobRole, difficulty, subtitleMode]
+      properties:
+        jobRole:
+          type: string
+          maxLength: 100
+        interviewType:
+          type: string
+          maxLength: 50
+          example: TECHNICAL
+        difficulty:
+          $ref: '#/components/schemas/Difficulty'
+        additionalRequest:
+          type: string
+        subtitleMode:
+          $ref: '#/components/schemas/SubtitleMode'
+    InterviewQuestion:
+      type: object
+      required: [questionId, questionKind, questionText, sequenceNo]
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        questionKind:
+          $ref: '#/components/schemas/QuestionKind'
+        questionText:
+          type: string
+        sequenceNo:
+          type: integer
+    InterviewStartResponse:
+      type: object
+      required: [sessionId, status, firstQuestion]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        firstQuestion:
+          $ref: '#/components/schemas/InterviewQuestion'
+    InterviewAnswerRequest:
+      type: object
+      required: [answerText]
+      properties:
+        answerText:
+          type: string
+          minLength: 1
+    InterviewAnswerResponse:
+      type: object
+      required: [answerId, isComplete]
+      properties:
+        answerId:
+          type: integer
+          format: int64
+        nextQuestion:
+          allOf:
+            - $ref: '#/components/schemas/InterviewQuestion'
+          nullable: true
+        isComplete:
+          type: boolean
+    EvaluationScore:
+      type: object
+      required: [criterion, applicable]
+      properties:
+        criterion:
+          type: string
+          example: COMMUNICATION
+        score:
+          type: number
+          format: double
+          nullable: true
+        feedback:
+          type: string
+        applicable:
+          type: boolean
+          description: false이면 score는 null
+    InterviewAnswerFeedback:
+      type: object
+      required: [question, answer, scores, generationStatus]
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        overallScore:
+          type: number
+          format: double
+          nullable: true
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationScore'
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        coachingSummary:
+          type: string
+        improvementTips:
+          type: array
+          items:
+            type: string
+        improvedAnswer:
+          type: string
+        rubricVersion:
+          type: string
+        generationStatus:
+          $ref: '#/components/schemas/GenerationStatus'
+    InterviewOverallFeedback:
+      type: object
+      properties:
+        overallScore:
+          type: number
+          format: double
+          nullable: true
+        summary:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+        evaluatedAnswerCount:
+          type: integer
+        rubricVersion:
+          type: string
+        generationStatus:
+          $ref: '#/components/schemas/GenerationStatus'
+    InterviewFeedback:
+      type: object
+      required: [sessionId, overall, answers]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        overall:
+          $ref: '#/components/schemas/InterviewOverallFeedback'
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewAnswerFeedback'
+    HistoryItem:
+      type: object
+      required: [sessionId, sessionType, status, title, startedAt]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        sessionType:
+          $ref: '#/components/schemas/SessionType'
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        title:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          nullable: true
+        overallScore:
+          type: number
+          format: double
+          nullable: true
+          description: 일반회화는 null
+    HistoryDetail:
+      type: object
+      required: [sessionId, sessionType, status, startedAt, transcript]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+        sessionType:
+          $ref: '#/components/schemas/SessionType'
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        startedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+          nullable: true
+        settings:
+          type: object
+          additionalProperties: true
+        transcript:
+          type: array
+          items:
+            $ref: '#/components/schemas/TranscriptMessage'
+        conversationFeedback:
+          allOf:
+            - $ref: '#/components/schemas/ConversationFeedback'
+          nullable: true
+        interviewFeedback:
+          allOf:
+            - $ref: '#/components/schemas/InterviewFeedback'
+          nullable: true
+    DailyStudyMinutes:
+      type: object
+      required: [date, studyMinutes]
+      properties:
+        date:
+          type: string
+          format: date
+        studyMinutes:
+          type: integer
+    DailySessionCount:
+      type: object
+      required: [date, sessionCount]
+      properties:
+        date:
+          type: string
+          format: date
+        sessionCount:
+          type: integer
+    ManagerDashboard:
+      type: object
+      required: [learnerCount, monthlySpeakingCount, averageStudyMinutes, monthlyInterviewCount, pendingLearnerCount, weeklyUsage]
+      properties:
+        learnerCount:
+          type: integer
+        monthlySpeakingCount:
+          type: integer
+        averageStudyMinutes:
+          type: number
+        monthlyInterviewCount:
+          type: integer
+        pendingLearnerCount:
+          type: integer
+        weeklyUsage:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyStudyMinutes'
+    LearnerSummary:
+      type: object
+      required: [userId, name, email, status, createdAt, studyCount]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        createdAt:
+          type: string
+          format: date-time
+        studyCount:
+          type: integer
+        lastActivityAt:
+          type: string
+          format: date-time
+          nullable: true
+    AdminDashboard:
+      type: object
+      required: [organizationCount, userCount, monthlySpeakingCount, monthlyActiveUsers, pendingManagerCount, weeklyUsage]
+      properties:
+        organizationCount:
+          type: integer
+        userCount:
+          type: integer
+        monthlySpeakingCount:
+          type: integer
+        monthlyActiveUsers:
+          type: integer
+        pendingManagerCount:
+          type: integer
+        weeklyUsage:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailySessionCount'
+    ManagerSummary:
+      type: object
+      required: [userId, name, email, organization, status, createdAt]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        department:
+          type: string
+          nullable: true
+        organization:
+          $ref: '#/components/schemas/OrganizationOption'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+    UserStatusChangeResponse:
+      type: object
+      required: [userId, status, message]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        message:
+          type: string
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+

@@ -6,6 +6,7 @@ import SessionEndModal from '../../components/speaking/SessionEndModal'
 import { useSpeakingStatus } from '../../components/speaking/useSpeakingStatus'
 import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
 import { BackArrowIcon, EndCallIcon, MicIcon } from '../../components/icons/DashboardIcons'
+import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
 import '../../components/setup/SetupForm.css'
 import '../../components/speaking/SpeakingSession.css'
 import './ConversationSpeakingPage.css'
@@ -16,8 +17,8 @@ const DEFAULT_SETTINGS = {
   partner: '친구',
   personality: '친절하고 활발한',
   description: '',
-  difficulty: '중급',
-  subtitleMode: '일본어',
+  difficulty: Difficulty.INTERMEDIATE,
+  subtitleMode: SubtitleMode.JAPANESE,
 }
 
 // STT/LLM이 아직 연결되지 않아 화면 확인용으로 고정해 둔 예시 대화입니다.
@@ -63,7 +64,7 @@ function ConversationSpeakingPage() {
   const [isEndModalOpen, setEndModalOpen] = useState(false)
 
   const sessionTitle = buildSessionTitle(settings.situation, settings.partner)
-  const sessionMeta = `일반 회화 · ${settings.partner} · ${settings.difficulty}`
+  const sessionMeta = `일반 회화 · ${settings.partner} · ${DifficultyLabel[settings.difficulty]}`
 
   const handleBack = () => navigate('/conversation/setup')
   const handleEndClick = () => setEndModalOpen(true)
@@ -101,7 +102,7 @@ function ConversationSpeakingPage() {
         </div>
 
         <div className="caption-card">
-          {settings.subtitleMode === 'OFF' ? (
+          {settings.subtitleMode === SubtitleMode.OFF ? (
             <p className="speaking-subtitle-off">자막이 꺼져 있어요.</p>
           ) : (
             MOCK_TURNS.map((turn, index) => (
@@ -114,7 +115,7 @@ function ConversationSpeakingPage() {
                     {turn.speaker === 'user' ? '나' : `AI · ${settings.partner}`}
                   </p>
                   <p className="caption-bubble__jp">{turn.jp}</p>
-                  {settings.subtitleMode === '일본어 + 한국어' && (
+                  {settings.subtitleMode === SubtitleMode.JAPANESE_KOREAN && (
                     <p className="caption-bubble__kr">{turn.kr}</p>
                   )}
                 </div>

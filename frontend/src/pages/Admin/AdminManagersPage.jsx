@@ -16,16 +16,16 @@ export default function AdminManagersPage() {
   const filtered = managers.filter((row) => (status === 'ALL' || row.status === status) && [row.name, row.email, companyName(row.customerId)].some((value) => value.toLowerCase().includes(query)))
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / 8)))
   const selectStatus = (value) => { setStatus(value); setPage(1) }
-  const register = (values) => { addManager(values); setSearch(''); setStatus('ALL'); setPage(1); setNotice(`${values.name} 담당자를 등록했습니다.`) }
+  const register = (values) => { addManager({ ...values, department: values.department?.trim() || null }); setSearch(''); setStatus('ALL'); setPage(1); setNotice(`${values.name} 담당자를 등록했습니다.`) }
   return <section className="admin-page">
-    <AdminHeader title="고객사 담당자 관리" subtitle="고객사별 담당자 계정을 조회하고 관리하세요" action={<button className="admin-button admin-primary" onClick={() => setModal(true)}>+ 담당자 등록</button>} />
+    <AdminHeader title="담당자 관리" subtitle="기관별 Manager 계정을 조회하고 관리하세요" action={<button className="admin-button admin-primary" onClick={() => setModal(true)}>+ 담당자 등록</button>} />
     <div className="admin-status-tabs" role="group" aria-label="담당자 상태별 보기">{Object.entries(adminStatusLabels).map(([key, label]) => <button key={key} aria-pressed={status === key} onClick={() => selectStatus(key)}>{label}</button>)}</div>
     <AdminToolbar managers search={search} onSearch={(value) => { setSearch(value); setPage(1) }} status={status} onStatus={selectStatus} />
-    <div className="admin-table-card"><table className="admin-table admin-table--managers"><caption className="admin-sr-only">고객사 담당자 목록</caption><thead><tr>{['담당자 이름', '이메일', '소속 고객사', '최근 로그인', '상태', '관리'].map((label) => <th key={label} scope="col">{label}</th>)}</tr></thead><tbody>
+    <div className="admin-table-card"><table className="admin-table admin-table--managers"><caption className="admin-sr-only">담당자 목록</caption><thead><tr>{['이름', '이메일', '소속 기관', '부서', '가입일', '최근 로그인', '상태', '관리'].map((label) => <th key={label} scope="col">{label}</th>)}</tr></thead><tbody>
       {filtered.slice((currentPage - 1) * 8, currentPage * 8).map((row) => <tr key={row.id}>
-        <th scope="row"><span className="admin-name"><span className="admin-avatar">{row.name[0]}</span>{row.name}</span></th><td>{row.email}</td><td>{companyName(row.customerId)}</td><td>{row.lastLogin ?? '—'}</td><td><StatusBadge status={row.status} /></td><td><AccountAction name={row.name} status={row.status} onChange={(value) => { changeManagerStatus(row.id, value); setNotice(`${row.name}: ${adminStatusLabels[value]} 상태로 변경했습니다.`) }} /></td>
+        <th scope="row"><span className="admin-name"><span className="admin-avatar">{row.name[0]}</span>{row.name}</span></th><td>{row.email}</td><td>{companyName(row.customerId)}</td><td>{row.department ?? '—'}</td><td>{row.joinedAt ? row.joinedAt.replaceAll('-', '.') : '—'}</td><td>{row.lastLogin ?? '—'}</td><td><StatusBadge status={row.status} /></td><td><AccountAction name={row.name} status={row.status} onChange={(value) => { changeManagerStatus(row.id, value); setNotice(`${row.name}: ${adminStatusLabels[value]} 상태로 변경했습니다.`) }} /></td>
       </tr>)}
-      {!filtered.length && <tr><td colSpan={6} className="admin-empty">조건에 맞는 담당자가 없습니다.</td></tr>}
+      {!filtered.length && <tr><td colSpan={8} className="admin-empty">조건에 맞는 담당자가 없습니다.</td></tr>}
     </tbody></table></div>
     <AdminPagination count={filtered.length} page={currentPage} onPage={setPage} unit="명" />
     <p role="status" className="admin-notice">{notice}</p>

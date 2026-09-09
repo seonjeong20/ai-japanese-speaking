@@ -14,7 +14,7 @@ function ManagerDashboardPage() {
 
   const pendingCount = adminAlertsMock.filter((alert) => alert.type === 'pending').length
 
-  const goToPendingLearners = () => navigate('/manager/learners?status=pending')
+  const goToPendingLearners = () => navigate('/manager/learners?status=PENDING')
   const goToAllLearners = () => navigate('/manager/learners')
 
   return (

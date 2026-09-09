@@ -5,16 +5,12 @@ import FeedbackStatsRow from '../../components/feedback/FeedbackStatsRow'
 import ScoreBar from '../../components/feedback/ScoreBar'
 import { BackArrowIcon, StarIcon, SwapArrowIcon } from '../../components/icons/DashboardIcons'
 import { historyMock } from '../../data/historyMock'
+import { SessionType, SessionTypeLabel } from '../../data/enums'
 import '../../components/setup/SetupForm.css'
 import '../../components/feedback/FeedbackPage.css'
 import '../ConversationFeedback/ConversationFeedbackPage.css'
 import '../InterviewFeedback/InterviewFeedbackPage.css'
 import './HistoryDetailPage.css'
-
-const TYPE_LABEL = {
-  conversation: '일반 회화',
-  interview: '면접 회화',
-}
 
 function HistoryDetailPage() {
   const { id } = useParams()
@@ -43,7 +39,7 @@ function HistoryDetailPage() {
 
   const subtitle = `${entry.date} · ${entry.duration}분`
 
-  const conversationStats = entry.type === 'conversation' && [
+  const conversationStats = entry.type === SessionType.CONVERSATION && [
     { id: 'duration', icon: 'clock', value: `${entry.duration}분`, label: '총 대화 시간' },
     { id: 'exchanges', icon: 'message', value: `${entry.feedback.exchangeCount}개`, label: '주고받은 문장' },
     { id: 'corrections', icon: 'edit', value: `${entry.feedback.corrections.length}개`, label: '표현 교정' },
@@ -55,21 +51,47 @@ function HistoryDetailPage() {
         <FeedbackHeader
           title={entry.title}
           subtitle={subtitle}
-          badgeLabel={TYPE_LABEL[entry.type]}
+          badgeLabel={SessionTypeLabel[entry.type]}
           onBack={handleBack}
         />
 
-        {entry.type === 'conversation' ? (
+        {entry.type === SessionType.CONVERSATION ? (
           <>
             <FeedbackStatsRow stats={conversationStats} />
 
             <div className="feedback-card">
+              <p className="feedback-card__title">전체 코멘트</p>
+              <p className="conversation-feedback-description">{entry.feedback.overallComment}</p>
+
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">잘한 점</p>
+                <ul className="feedback-bullet-list">
+                  {entry.feedback.strengths.map((item, index) => (
+                    <li key={index} className="feedback-bullet-list__item">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">다음 학습 팁</p>
+                <p className="feedback-subsection__text">{entry.feedback.nextStepTip}</p>
+              </div>
+            </div>
+
+            <div className="feedback-card">
+              <p className="feedback-card__title">세부 평가</p>
               <ScoreBar
                 label={entry.feedback.naturalness.label}
                 score={entry.feedback.naturalness.score}
                 size="lg"
               />
               <p className="conversation-feedback-description">{entry.feedback.naturalness.description}</p>
+              <ScoreBar label={entry.feedback.grammar.label} score={entry.feedback.grammar.score} size="md" />
+              <p className="conversation-feedback-description">{entry.feedback.grammar.description}</p>
+              <ScoreBar label={entry.feedback.vocabulary.label} score={entry.feedback.vocabulary.score} size="md" />
+              <p className="conversation-feedback-description">{entry.feedback.vocabulary.description}</p>
             </div>
 
             <div className="feedback-card">
@@ -100,6 +122,19 @@ function HistoryDetailPage() {
                 </div>
               ))}
             </div>
+
+            <div className="feedback-card">
+              <p className="feedback-card__title">전체 대화 기록</p>
+              <div className="feedback-transcript">
+                {entry.feedback.transcript.map((turn) => (
+                  <div key={turn.id} className="feedback-transcript__row">
+                    <p className="feedback-transcript__speaker">{turn.speaker === 'user' ? '나' : 'AI'}</p>
+                    <p className="feedback-transcript__jp">{turn.jp}</p>
+                    <p className="feedback-transcript__kr">{turn.kr}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </>
         ) : (
           <>
@@ -120,12 +155,45 @@ function HistoryDetailPage() {
             </div>
 
             <div className="feedback-card">
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">강점</p>
+                <ul className="feedback-bullet-list">
+                  {entry.feedback.strengths.map((item, index) => (
+                    <li key={index} className="feedback-bullet-list__item">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">개선점</p>
+                <ul className="feedback-bullet-list">
+                  {entry.feedback.improvements.map((item, index) => (
+                    <li key={index} className="feedback-bullet-list__item">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">코칭</p>
+                <p className="feedback-subsection__text">{entry.feedback.coaching}</p>
+              </div>
+            </div>
+
+            <div className="feedback-card">
               <p className="feedback-card__title">질문별 피드백</p>
               <div className="interview-feedback-qa-list">
                 {entry.feedback.questionFeedback.map((item) => (
                   <div key={item.id} className="interview-feedback-qa">
                     <p className="interview-feedback-qa__question">{item.question}</p>
                     <p className="interview-feedback-qa__feedback">{item.feedback}</p>
+                    <p className="interview-feedback-qa__improved">
+                      <span className="interview-feedback-qa__improved-label">개선 답변</span>
+                      {item.improvedAnswer}
+                    </p>
                   </div>
                 ))}
               </div>

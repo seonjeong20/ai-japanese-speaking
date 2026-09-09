@@ -12,8 +12,21 @@ import './ConversationFeedbackPage.css'
 
 function ConversationFeedbackPage() {
   const navigate = useNavigate()
-  const { title, badgeLabel, subtitle, stats, naturalness, corrections, recommendedExpressions } =
-    conversationFeedbackMock
+  const {
+    title,
+    badgeLabel,
+    subtitle,
+    stats,
+    overallComment,
+    naturalness,
+    grammar,
+    vocabulary,
+    strengths,
+    corrections,
+    recommendedExpressions,
+    nextStepTip,
+    transcript,
+  } = conversationFeedbackMock
 
   const handleBack = () => navigate('/learning')
 
@@ -25,8 +38,34 @@ function ConversationFeedbackPage() {
         <FeedbackStatsRow stats={stats} />
 
         <div className="feedback-card">
+          <p className="feedback-card__title">전체 코멘트</p>
+          <p className="conversation-feedback-description">{overallComment}</p>
+
+          <div className="feedback-subsection">
+            <p className="feedback-subsection__label">잘한 점</p>
+            <ul className="feedback-bullet-list">
+              {strengths.map((item, index) => (
+                <li key={index} className="feedback-bullet-list__item">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="feedback-subsection">
+            <p className="feedback-subsection__label">다음 학습 팁</p>
+            <p className="feedback-subsection__text">{nextStepTip}</p>
+          </div>
+        </div>
+
+        <div className="feedback-card">
+          <p className="feedback-card__title">세부 평가</p>
           <ScoreBar label={naturalness.label} score={naturalness.score} size="lg" />
           <p className="conversation-feedback-description">{naturalness.description}</p>
+          <ScoreBar label={grammar.label} score={grammar.score} size="md" />
+          <p className="conversation-feedback-description">{grammar.description}</p>
+          <ScoreBar label={vocabulary.label} score={vocabulary.score} size="md" />
+          <p className="conversation-feedback-description">{vocabulary.description}</p>
         </div>
 
         <div className="feedback-card">
@@ -56,6 +95,19 @@ function ConversationFeedbackPage() {
               <p className="conversation-feedback-recommended__kr">{expr.kr}</p>
             </div>
           ))}
+        </div>
+
+        <div className="feedback-card">
+          <p className="feedback-card__title">전체 대화 기록</p>
+          <div className="feedback-transcript">
+            {transcript.map((turn) => (
+              <div key={turn.id} className="feedback-transcript__row">
+                <p className="feedback-transcript__speaker">{turn.speaker === 'user' ? '나' : 'AI'}</p>
+                <p className="feedback-transcript__jp">{turn.jp}</p>
+                <p className="feedback-transcript__kr">{turn.kr}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <FeedbackCtaRow retryTo="/conversation/setup" homeTo="/learning" />

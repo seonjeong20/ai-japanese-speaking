@@ -165,6 +165,103 @@
   border-radius: 4px;
 }
 
+/* Sub-section label (전체 코멘트 카드 내부의 "잘한 점" / "다음 학습 팁" 등) */
+
+.feedback-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feedback-subsection__label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.feedback-subsection__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+/* Bullet list (잘한 점 / 강점 / 개선점 등) */
+
+.feedback-bullet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedback-bullet-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.feedback-bullet-list__item::before {
+  content: '';
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--color-lime);
+}
+
+/* Transcript */
+
+.feedback-transcript {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.feedback-transcript__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-track);
+}
+
+.feedback-transcript__row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.feedback-transcript__row:first-child {
+  padding-top: 0;
+}
+
+.feedback-transcript__speaker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.feedback-transcript__jp {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.feedback-transcript__kr {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
 /* CTA row */
 
 .feedback-cta-row {

@@ -1,14 +1,18 @@
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 240px;
   min-width: 240px;
-  height: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 32px 24px;
   background: var(--color-white);
   border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  z-index: 10;
 }
 
 .sidebar-logo {
@@ -114,9 +118,10 @@
 
 @media (max-width: 960px) {
   .sidebar {
+    position: static;
     width: 100%;
     min-width: 0;
-    min-height: auto;
+    height: auto;
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;

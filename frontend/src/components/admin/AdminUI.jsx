@@ -10,7 +10,7 @@ export function StatusBadge({ status }) {
 }
 export function AdminToolbar({ search, onSearch, status, onStatus, managers = false }) {
   return <div className="admin-toolbar">
-    <label className="admin-search"><img src={searchIcon} alt="" width="18" height="18" /><input aria-label={managers ? '담당자 검색' : '고객사 검색'} placeholder={managers ? '이름, 이메일 또는 고객사로 검색' : '회사명 또는 담당자 이메일로 검색'} value={search} onChange={(e) => onSearch(e.target.value)} /></label>
+    <label className="admin-search"><img src={searchIcon} alt="" width="18" height="18" /><input aria-label={managers ? '담당자 검색' : '기관 검색'} placeholder={managers ? '이름, 이메일 또는 기관으로 검색' : '기관명으로 검색'} value={search} onChange={(e) => onSearch(e.target.value)} /></label>
     <select aria-label="상태 필터" value={status} onChange={(e) => onStatus(e.target.value)}>{(managers ? Object.keys(adminStatusLabels) : ['ALL', 'ACTIVE', 'INACTIVE']).map((s) => <option key={s} value={s}>상태: {adminStatusLabels[s]}</option>)}</select>
   </div>
 }

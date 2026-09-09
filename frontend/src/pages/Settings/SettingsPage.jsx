@@ -3,12 +3,10 @@ import LearnerLayout from '../../components/layout/LearnerLayout'
 import SegmentedControl from '../../components/setup/SegmentedControl'
 import { CheckSmallIcon } from '../../components/icons/DashboardIcons'
 import { accountMock, defaultSpeakingSettings } from '../../data/settingsMock'
+import { DIFFICULTY_OPTIONS, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
 import '../../components/setup/SetupForm.css'
 import '../../components/feedback/FeedbackPage.css'
 import './SettingsPage.css'
-
-const DIFFICULTY_OPTIONS = ['초급', '중급', '고급']
-const SUBTITLE_OPTIONS = ['OFF', '일본어', '일본어 + 한국어']
 
 const SUCCESS_MESSAGE_MS = 2500
 
@@ -77,7 +75,7 @@ function SettingsPage() {
 
           <SegmentedControl
             label="기본 자막"
-            options={SUBTITLE_OPTIONS}
+            options={SUBTITLE_MODE_OPTIONS}
             value={draftSettings.subtitleMode}
             onChange={(value) => updateDraft('subtitleMode', value)}
           />

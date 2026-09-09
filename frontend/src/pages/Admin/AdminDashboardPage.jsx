@@ -3,11 +3,13 @@ import { BellIcon, BriefcaseIcon, ChatIcon, ChevronRightSmallIcon, SparkleIcon }
 import { adminKpiMock, adminRecentCustomersMock, adminWeeklyUsageMock } from '../../data/adminMock'
 
 export default function AdminDashboardPage() {
-  const { customers } = useOutletContext()
+  const { customers, managers } = useOutletContext()
   const recent = [...customers.filter((row) => row.createdInSession), ...adminRecentCustomersMock].slice(0, 4)
+  const pendingManagerCount = managers.filter((row) => row.status === 'PENDING').length
+  const kpis = [...adminKpiMock, { label: '승인 대기 Manager 수', value: `${pendingManagerCount}명`, helper: '승인 필요' }]
   return <section className="admin-page admin-dashboard">
     <header className="admin-header admin-dashboard-header"><div><h1>안녕하세요, 시스템 관리자님! <SparkleIcon size={20} /></h1><p>전체 서비스 운영 현황을 한눈에 확인해보세요.</p></div><Link className="admin-bell" to="/admin/managers" aria-label="담당자 승인 및 계정 관리"><BellIcon size={18} /></Link></header>
-    <div className="admin-kpis">{adminKpiMock.map((kpi) => <article className="admin-kpi" key={kpi.label}><p>{kpi.label}</p><strong>{kpi.value}</strong><small>{kpi.helper}</small></article>)}</div>
+    <div className="admin-kpis">{kpis.map((kpi) => <article className="admin-kpi" key={kpi.label}><p>{kpi.label}</p><strong>{kpi.value}</strong><small>{kpi.helper}</small></article>)}</div>
     <div className="admin-dashboard-panels">
       <article className="admin-panel admin-usage" aria-label="플랫폼 전체 주간 Speaking 이용량"><header><h2>주간 Speaking 이용량 (전체 플랫폼)</h2><span>이번 주</span></header><div className="admin-usage-total"><strong>{adminWeeklyUsageMock.total}</strong><span>전체 고객사 합산 기준</span></div>
         <div className="admin-chart" role="img" aria-label="월요일부터 일요일까지의 상대 이용량. 금요일이 가장 높고, 일요일이 가장 낮습니다.">{adminWeeklyUsageMock.days.map((day) => <div className="admin-chart-column" key={day.label}><div className="admin-chart-track"><span style={{ height: day.height }} className={day.highlighted ? 'admin-chart-highlighted' : ''} /></div><span>{day.label}</span></div>)}</div>

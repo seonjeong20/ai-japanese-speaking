@@ -7,23 +7,25 @@ import SettingTextarea from '../../components/setup/SettingTextarea'
 import SetupCta from '../../components/setup/SetupCta'
 import SetupPageHeader from '../../components/setup/SetupPageHeader'
 import { CharacterIcon, DescriptionIcon, PersonalityIcon, SituationIcon } from '../../components/icons/DashboardIcons'
+import { DIFFICULTY_OPTIONS, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
+import { defaultSpeakingSettings } from '../../data/settingsMock'
 import '../../components/setup/SetupForm.css'
 
 const SITUATION_OPTIONS = ['카페에서', '여행 중', '쇼핑할 때', '학교에서', '직장에서', '일상 대화']
 const PARTNER_OPTIONS = ['친구', '카페 직원', '직장 동료', '선배', '처음 만난 사람', '대학생']
 const PERSONALITY_OPTIONS = ['친절하고 활발한', '차분한', '말이 많은', '조금 무뚝뚝한', '편안하고 친근한']
-const DIFFICULTY_OPTIONS = ['초급', '중급', '고급']
-const SUBTITLE_OPTIONS = ['OFF', '일본어', '일본어 + 한국어']
 
 function ConversationSetupPage() {
   const navigate = useNavigate()
+  // 난이도/자막은 Settings > Speaking 기본 설정 값을 이번 회화의 기본값으로 불러옵니다.
+  // 아래에서 세션 한정으로 다른 값을 선택해도 저장된 기본 설정에는 영향을 주지 않습니다.
   const [conversationSettings, setConversationSettings] = useState({
     situation: '',
     partner: '',
     personality: '',
     description: '',
-    difficulty: '중급',
-    subtitleMode: '일본어',
+    difficulty: defaultSpeakingSettings.difficulty,
+    subtitleMode: defaultSpeakingSettings.subtitleMode,
   })
 
   const updateSetting = (key, value) => {
@@ -95,7 +97,7 @@ function ConversationSetupPage() {
 
           <SegmentedControl
             label="자막"
-            options={SUBTITLE_OPTIONS}
+            options={SUBTITLE_MODE_OPTIONS}
             value={conversationSettings.subtitleMode}
             onChange={(value) => updateSetting('subtitleMode', value)}
           />

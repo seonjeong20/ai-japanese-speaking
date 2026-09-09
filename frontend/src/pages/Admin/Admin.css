@@ -1,8 +1,8 @@
 .admin-layout { display: flex; min-height: 100vh; width: 100%; background: var(--color-background); }
-.admin-layout .sidebar { height: auto; }
 .admin-layout .sidebar-nav__item { white-space: nowrap; }
 .admin-layout .sidebar-profile { padding: 12px 0 0; }
-.admin-content { flex: 1; min-width: 0; padding: 40px 48px; }
+/* Sidebar는 position: fixed로 뷰포트에 고정되므로 본문에 Sidebar 너비(240px)만큼 여백을 둡니다. */
+.admin-content { flex: 1; min-width: 0; margin-left: 240px; padding: 40px 48px; }
 .admin-page { display: flex; flex-direction: column; gap: 24px; }
 .admin-page h1, .admin-page h2, .admin-page p, .admin-modal h2 { margin: 0; }
 .admin-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
@@ -45,7 +45,7 @@
 .admin-status--pending { background: var(--color-charcoal); color: var(--color-lime); font-weight: 700; }
 .admin-status--inactive { border: 1px solid var(--color-border); background: white; }
 .admin-status--rejected { background: var(--color-surface); }
-.admin-row-actions { display: flex; gap: 8px; }
+.admin-row-actions { display: flex; align-items: flex-start; gap: 8px; }
 .admin-small, .admin-account-action summary { padding: 6px 12px; border: 1px solid var(--color-border); border-radius: 8px; background: white; font-size: 12px; line-height: 15px; color: var(--color-text-secondary); }
 .admin-account-action summary { color: var(--color-text-primary); cursor: pointer; list-style: none; width: fit-content; }
 .admin-account-action summary::-webkit-details-marker { display: none; }
@@ -64,7 +64,7 @@
 .admin-dashboard-header h1 svg { color: var(--color-lime); flex-shrink: 0; }
 .admin-dashboard-header p { font-size: 13px; margin-top: 4px; }
 .admin-bell { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--color-surface); color: var(--color-charcoal); flex-shrink: 0; }
-.admin-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.admin-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px; }
 .admin-kpi { padding: 24px; border: 1px solid var(--color-border); border-radius: 20px; background: white; display: flex; flex-direction: column; gap: 8px; line-height: 1.2; }
 .admin-kpi p { color: var(--color-text-secondary); font-size: 13px; }
 .admin-kpi strong { font-size: 30px; }
@@ -114,5 +114,5 @@
 .admin-modal footer { display: flex; gap: 12px; justify-content: flex-end; }
 .admin-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 @media (max-width: 1200px) { .admin-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .admin-dashboard-panels { grid-template-columns: 1fr; } .admin-usage { min-height: 260px; } }
-@media (max-width: 960px) { .admin-layout { flex-direction: column; } .admin-content { padding: 24px; } .admin-dashboard { min-height: auto; } }
+@media (max-width: 960px) { .admin-layout { flex-direction: column; } .admin-content { margin-left: 0; padding: 24px; } .admin-dashboard { min-height: auto; } }
 @media (max-width: 600px) { .admin-content { padding: 24px 16px; } .admin-header { flex-wrap: wrap; } .admin-header h1 { font-size: 21px; } .admin-dashboard-header h1 { font-size: 18px; } .admin-kpis { gap: 12px; } .admin-kpi { padding: 18px; } .admin-kpi strong { font-size: 24px; } .admin-status-tabs { width: 100%; } .admin-status-tabs button { flex: 1; padding: 9px 8px; } .admin-toolbar { flex-wrap: wrap; } .admin-search { flex-basis: 100%; } .admin-pagination { flex-wrap: wrap; } .admin-modal { padding: 24px; } }

@@ -13,13 +13,9 @@ const STATUS_TABS = [
   { id: 'REJECTED', label: '거절' },
 ]
 
-// /manager/learners?status=pending 같은 단순 query로 승인 대기 탭을 바로 열 수 있도록 매핑합니다.
-const STATUS_PARAM_TO_ID = {
-  pending: 'PENDING',
-  active: 'ACTIVE',
-  inactive: 'INACTIVE',
-  rejected: 'REJECTED',
-}
+// /manager/learners?status=PENDING 같은 단순 query로 승인 대기 탭을 바로 열 수 있도록 매핑합니다.
+// (UserStatus enum 값과 동일한 대문자 키를 사용하되, 대소문자를 구분하지 않고 매칭합니다.)
+const VALID_STATUS_IDS = ['PENDING', 'ACTIVE', 'INACTIVE', 'REJECTED']
 
 const STATUS_META = {
   ACTIVE: { label: '활성', className: 'manager-status-pill--active' },
@@ -32,7 +28,8 @@ const PAGE_SIZE = 6
 
 function ManagerLearnersPage() {
   const [searchParams] = useSearchParams()
-  const initialStatus = STATUS_PARAM_TO_ID[searchParams.get('status')] ?? 'ALL'
+  const statusParam = searchParams.get('status')?.toUpperCase()
+  const initialStatus = VALID_STATUS_IDS.includes(statusParam) ? statusParam : 'ALL'
 
   const [learners, setLearners] = useState(managerLearnersMock)
   const [statusFilter, setStatusFilter] = useState(initialStatus)

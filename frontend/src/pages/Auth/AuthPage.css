@@ -250,6 +250,84 @@
   color: var(--color-text-secondary);
 }
 
+/* Account type toggle (Sign Up) */
+
+.auth-type-toggle {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-type-toggle__chip {
+  flex: 1 1 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.auth-type-toggle__chip:hover {
+  border-color: var(--color-icon-muted);
+}
+
+.auth-type-toggle__chip--selected {
+  background: var(--color-lime);
+  border-color: var(--color-lime);
+  color: var(--color-charcoal);
+  font-weight: 700;
+}
+
+.auth-type-toggle__chip:focus-visible {
+  outline: 2px solid var(--color-charcoal);
+  outline-offset: 2px;
+}
+
+/* Sign Up form notice / error */
+
+.auth-form__notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.auth-field__error {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-live-dot);
+}
+
+/* Sign Up complete state */
+
+.auth-form--complete {
+  align-items: center;
+  text-align: center;
+}
+
+.auth-complete__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  color: var(--color-charcoal);
+}
+
 .auth-field {
   display: flex;
   flex-direction: column;

@@ -3,17 +3,18 @@ import { Link } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import { BriefcaseIcon, ChatIcon, ChevronRightIcon } from '../../components/icons/DashboardIcons'
 import { historyMock } from '../../data/historyMock'
+import { SessionType } from '../../data/enums'
 import './MyHistoryPage.css'
 
 const FILTERS = [
   { id: 'all', label: '전체' },
-  { id: 'conversation', label: '일반 회화' },
-  { id: 'interview', label: '면접 회화' },
+  { id: SessionType.CONVERSATION, label: '일반 회화' },
+  { id: SessionType.INTERVIEW, label: '면접 회화' },
 ]
 
 const TYPE_META = {
-  conversation: { label: '일반 회화', icon: ChatIcon, badgeClass: 'my-history-item__icon-badge--lime' },
-  interview: { label: '면접 회화', icon: BriefcaseIcon, badgeClass: 'my-history-item__icon-badge--gray' },
+  [SessionType.CONVERSATION]: { label: '일반 회화', icon: ChatIcon, badgeClass: 'my-history-item__icon-badge--lime' },
+  [SessionType.INTERVIEW]: { label: '면접 회화', icon: BriefcaseIcon, badgeClass: 'my-history-item__icon-badge--gray' },
 }
 
 function MyHistoryPage() {

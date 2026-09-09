@@ -7,21 +7,22 @@ import SettingTextarea from '../../components/setup/SettingTextarea'
 import SetupCta from '../../components/setup/SetupCta'
 import SetupPageHeader from '../../components/setup/SetupPageHeader'
 import { DescriptionIcon, JobIcon } from '../../components/icons/DashboardIcons'
+import { DIFFICULTY_OPTIONS, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
+import { defaultSpeakingSettings } from '../../data/settingsMock'
 import '../../components/setup/SetupForm.css'
 
 const JOB_OPTIONS = ['Backend Developer', 'Frontend Developer', 'AI Engineer', 'Data Engineer', 'Mobile Developer']
 const INTERVIEW_TYPE_OPTIONS = ['일반 면접', '기술 면접', '인성 면접']
-const DIFFICULTY_OPTIONS = ['초급', '중급', '고급']
-const SUBTITLE_OPTIONS = ['OFF', '일본어', '일본어 + 한국어']
 
 function InterviewSetupPage() {
   const navigate = useNavigate()
+  // 난이도/자막은 Settings > Speaking 기본 설정 값을 이번 면접의 기본값으로 불러옵니다.
   const [interviewSettings, setInterviewSettings] = useState({
     job: '',
     interviewType: '',
-    difficulty: '중급',
+    difficulty: defaultSpeakingSettings.difficulty,
     additionalRequest: '',
-    subtitleMode: '일본어',
+    subtitleMode: defaultSpeakingSettings.subtitleMode,
   })
 
   const updateSetting = (key, value) => {
@@ -80,7 +81,7 @@ function InterviewSetupPage() {
 
           <SegmentedControl
             label="자막"
-            options={SUBTITLE_OPTIONS}
+            options={SUBTITLE_MODE_OPTIONS}
             value={interviewSettings.subtitleMode}
             onChange={(value) => updateSetting('subtitleMode', value)}
           />

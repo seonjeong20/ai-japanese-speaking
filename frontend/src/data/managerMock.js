@@ -19,6 +19,7 @@ export const managerKpiMock = [
   { id: 'usage', label: '이번 달 Speaking 이용량', value: '1,240회', helper: '지난달 대비 +12%' },
   { id: 'avgTime', label: '평균 학습 시간', value: '32분', helper: '1인당 주간 평균' },
   { id: 'interview', label: '이번 달 면접 연습', value: '86회', helper: '이번 달 기준' },
+  { id: 'pendingLearners', label: '승인 대기 학습자 수', value: '2명', helper: '승인 필요' },
 ]
 
 // 조직 전체 주간 학습시간(분 단위 합산). 총합이 "48시간 20분"이 되도록 구성했습니다.
