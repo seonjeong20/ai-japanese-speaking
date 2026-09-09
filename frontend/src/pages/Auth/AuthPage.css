@@ -47,10 +47,27 @@
   z-index: 2;
 }
 
+/*
+ * The sign-up form can have more fields than fit in the card's fixed height
+ * (e.g. the Manager fields). Rather than letting the card grow, this panel
+ * scrolls internally. `justify-content: center` would center content that's
+ * taller than the panel by pushing its top half above the scrollable area
+ * (unreachable, since scrollTop can't go negative), so vertical centering is
+ * done with auto margins on the form itself instead: those collapse to 0
+ * once content overflows, so it aligns to the top and scrolls down to the
+ * last field/button, while still centering normally when content fits.
+ */
 .form-panel--sign-up {
   opacity: 0;
   z-index: 1;
   pointer-events: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.form-panel--sign-up .auth-form {
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .auth-container--sign-up .form-panel--sign-in {

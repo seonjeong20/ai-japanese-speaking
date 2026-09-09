@@ -126,6 +126,7 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -137,12 +138,18 @@
 }
 
 .recent-item {
+  width: 100%;
+  border-bottom: 1px solid var(--color-track);
+}
+
+.recent-item__link {
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
   padding: 10px 0;
-  border-bottom: 1px solid var(--color-track);
+  text-decoration: none;
+  color: inherit;
 }
 
 .recent-item:last-child {
