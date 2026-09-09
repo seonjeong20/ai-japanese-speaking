@@ -8,7 +8,7 @@ import './LearnerLayout.css'
 const MANAGER_NAV_ITEMS = [
   { label: 'Dashboard', to: '/manager/dashboard', icon: DashboardIcon, implemented: true, matchPaths: ['/manager/dashboard'] },
   { label: '학습자 관리', to: '/manager/learners', icon: LearningIcon, implemented: true, matchPaths: ['/manager/learners'] },
-  { label: 'Settings', to: '/manager/settings', icon: SettingsIcon, implemented: false, matchPaths: ['/manager/settings'] },
+  { label: 'Settings', to: '/manager/settings', icon: SettingsIcon, implemented: true, matchPaths: ['/manager/settings'] },
 ]
 
 const managerProfile = { name: managerProfileMock.name, initial: managerProfileMock.initial }

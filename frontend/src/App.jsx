@@ -13,6 +13,7 @@ import HistoryDetailPage from './pages/HistoryDetail/HistoryDetailPage'
 import SettingsPage from './pages/Settings/SettingsPage'
 import ManagerDashboardPage from './pages/ManagerDashboard/ManagerDashboardPage'
 import ManagerLearnersPage from './pages/ManagerLearners/ManagerLearnersPage'
+import ManagerSettingsPage from './pages/ManagerSettings/ManagerSettingsPage'
 
 import AdminLayout from './components/layout/AdminLayout'
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage'
@@ -37,6 +38,7 @@ function App() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
       <Route path="/manager/learners" element={<ManagerLearnersPage />} />
+      <Route path="/manager/settings" element={<ManagerSettingsPage />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />

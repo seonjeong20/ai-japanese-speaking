@@ -5,6 +5,15 @@ export const managerProfileMock = {
   initial: '박',
 }
 
+// Manager Settings > 계정 정보 영역에서 사용하는 조회 전용 mock 데이터입니다.
+// 실제 Backend가 연결되면 로그인한 매니저 계정 정보로 교체하면 됩니다.
+export const managerAccountMock = {
+  name: '김민수',
+  email: 'minsu@company.com',
+  organization: 'ABC 어학원',
+  department: '교육운영팀',
+}
+
 export const managerKpiMock = [
   { id: 'learners', label: '소속 학습자 수', value: '128명', helper: '지난달 대비 +8명' },
   { id: 'usage', label: '이번 달 Speaking 이용량', value: '1,240회', helper: '지난달 대비 +12%' },
