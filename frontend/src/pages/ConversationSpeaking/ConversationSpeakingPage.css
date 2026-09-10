@@ -1,3 +1,23 @@
+/*
+ * Speaking Content 영역을 viewport 높이에 맞춰 고정하고 Conversation Message
+ * 영역만 내부 scroll되도록 합니다 (LearnerLayout__content의 상하 padding만큼 뺀 높이).
+ * Header / Voice Orb / 상태 문구 / Bottom Controls는 항상 같은 위치에 유지됩니다.
+ */
+.conversation-speaking-page {
+  height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.conversation-speaking-page .voice-orb-area {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 960px) {
+  .conversation-speaking-page {
+    height: calc(100vh - 48px);
+  }
+}
+
 .caption-card {
   display: flex;
   flex-direction: column;
@@ -7,6 +27,9 @@
   background: var(--color-white);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-panel);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .caption-bubble-row {

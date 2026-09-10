@@ -1055,6 +1055,12 @@ components:
           type: string
         suggestedExpression:
           type: string
+        reading:
+          type: string
+          description: suggestedExpression을 히라가나 중심으로 읽은 표기
+        koreanTranslation:
+          type: string
+          description: suggestedExpression의 자연스러운 한국어 번역
         explanation:
           type: string
         displayOrder:

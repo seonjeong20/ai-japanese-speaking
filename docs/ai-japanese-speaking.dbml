@@ -1,0 +1,555 @@
+// ======================================================
+// AI Japanese Speaking Service
+// ======================================================
+
+
+// ======================================================
+// 1. Organization
+// ======================================================
+
+Table organizations {
+  id bigint [pk, increment]
+
+  name varchar(100) [not null]
+  status varchar(20) [not null, default: 'ACTIVE']
+
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  Note: '''
+  기업/기관 정보
+
+  status:
+  ACTIVE
+  INACTIVE
+  '''
+}
+
+
+// ======================================================
+// 2. User
+// ======================================================
+
+Table users {
+  id bigint [pk, increment]
+
+  organization_id bigint
+
+  name varchar(50) [not null]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+
+  department varchar(100)
+
+  role varchar(20) [not null]
+  status varchar(20) [not null, default: 'PENDING']
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  last_login_at timestamp
+
+  Note: '''
+  전체 사용자
+
+  role:
+  LEARNER
+  MANAGER
+  ADMIN
+
+  status:
+  PENDING
+  ACTIVE
+  REJECTED
+  INACTIVE
+
+  LEARNER:
+  소속 기관 Manager의 승인 필요
+
+  MANAGER:
+  System Admin의 승인 필요
+
+  ADMIN:
+  회원가입 없음
+  DB에 직접 생성
+  '''
+}
+
+Ref: users.organization_id > organizations.id
+
+// ======================================================
+// 3. user_preferences
+// ======================================================
+
+Table user_preferences {
+  id bigint [pk, increment]
+
+  user_id bigint [not null, unique]
+
+  default_difficulty varchar(20) [not null, default: 'INTERMEDIATE']
+  default_subtitle_mode varchar(30) [not null, default: 'JAPANESE_KOREAN']
+
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+Ref: user_preferences.user_id > users.id
+
+// ======================================================
+// 4. Speaking Session
+// ======================================================
+
+Table speaking_sessions {
+  id bigint [pk, increment]
+
+  user_id bigint [not null]
+
+  session_type varchar(20) [not null]
+  status varchar(20) [not null, default: 'IN_PROGRESS']
+
+  started_at timestamp [not null]
+  ended_at timestamp
+
+  duration_seconds int
+
+  created_at timestamp [not null]
+
+  Note: '''
+  한 번의 Speaking 학습 세션
+
+  session_type:
+  CONVERSATION
+  INTERVIEW
+
+  status:
+  IN_PROGRESS
+  COMPLETED
+  ABORTED
+
+  Dashboard / History / Manager 통계의
+  기본 집계 데이터로 사용
+  '''
+}
+
+Ref: speaking_sessions.user_id > users.id
+
+
+// ======================================================
+// 5. Conversation Settings
+// ======================================================
+
+Table conversation_settings {
+  id bigint [pk, increment]
+
+  session_id bigint [not null, unique]
+
+  situation varchar(100)
+  partner_role varchar(100)
+  partner_personality varchar(100)
+
+  situation_description text
+
+  difficulty varchar(20) [not null]
+  subtitle_mode varchar(30) [not null]
+
+  created_at timestamp [not null]
+
+  Note: '''
+  일반회화 시작 당시 설정
+
+  difficulty:
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+
+  subtitle_mode:
+  OFF
+  JAPANESE
+  JAPANESE_KOREAN
+  '''
+}
+
+Ref: conversation_settings.session_id > speaking_sessions.id
+
+
+// ======================================================
+// 6. Interview Settings
+// ======================================================
+
+Table interview_settings {
+  id bigint [pk, increment]
+
+  session_id bigint [not null, unique]
+
+  job_role varchar(100) [not null]
+  interview_type varchar(50)
+
+  difficulty varchar(20) [not null]
+
+  additional_request text
+
+  subtitle_mode varchar(30) [not null]
+
+  target_country varchar(30) [default: 'JAPAN']
+  target_language varchar(30) [default: 'JAPANESE']
+  feedback_language varchar(30) [default: 'KOREAN']
+
+  created_at timestamp [not null]
+
+  Note: '''
+  면접 시작 당시 설정
+
+  현재 서비스는 일본 취업 면접 중심이므로
+  country/language 기본값은 일본/일본어
+
+  학습 당시 설정을 보존하기 위해
+  User Settings와 별도로 저장
+  '''
+}
+
+Ref: interview_settings.session_id > speaking_sessions.id
+
+
+// ======================================================
+// 7. Speaking Messages
+// ======================================================
+
+Table speaking_messages {
+  id bigint [pk, increment]
+
+  session_id bigint [not null]
+
+  sequence_no int [not null]
+
+  speaker varchar(20) [not null]
+  message_type varchar(30) [not null]
+
+  content text [not null]
+
+  created_at timestamp [not null]
+
+  indexes {
+    (session_id, sequence_no) [unique]
+  }
+
+  Note: '''
+  실제 Speaking Transcript
+
+  speaker:
+  USER
+  AI
+
+  message_type 예:
+  QUESTION
+  ANSWER
+  FOLLOW_UP
+  CONVERSATION
+
+  STT 결과와 AI 응답의 텍스트 기록
+  '''
+}
+
+Ref: speaking_messages.session_id > speaking_sessions.id
+
+
+// ======================================================
+// 8. Conversation Feedback
+// ======================================================
+
+Table conversation_feedbacks {
+  id bigint [pk, increment]
+
+  session_id bigint [not null, unique]
+
+  summary text
+
+  naturalness_comment text
+  grammar_comment text
+  vocabulary_comment text
+
+  strengths json
+  next_tip text
+
+  generation_status varchar(20) [not null, default: 'PENDING']
+
+  generated_at timestamp
+
+  Note: '''
+  일반회화 전체 피드백
+
+  면접보다 가볍게 구성
+
+  주요 평가:
+  - 자연스러움
+  - 문법
+  - 어휘
+  - 잘한 점
+  - 다음 학습 팁
+
+  generation_status:
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  '''
+}
+
+Ref: conversation_feedbacks.session_id > speaking_sessions.id
+
+
+// ======================================================
+// 9. Conversation Corrections
+// ======================================================
+
+Table conversation_corrections {
+  id bigint [pk, increment]
+
+  feedback_id bigint [not null]
+
+  message_id bigint
+
+  category varchar(30) [not null]
+
+  original_expression text [not null]
+  suggested_expression text [not null]
+
+  reading text
+  korean_translation text
+
+  explanation text
+
+  display_order int [not null]
+
+  Note: '''
+  일반회화 표현별 교정
+
+  category 예:
+  GRAMMAR
+  VOCABULARY
+  NATURALNESS
+  EXPRESSION
+
+  message_id를 통해
+  실제 사용자 발화와 연결 가능
+  '''
+}
+
+Ref: conversation_corrections.feedback_id > conversation_feedbacks.id
+Ref: conversation_corrections.message_id > speaking_messages.id
+
+
+// ======================================================
+// 10. Interview Questions
+// ======================================================
+
+Table interview_questions {
+  id bigint [pk, increment]
+
+  session_id bigint [not null]
+
+  parent_question_id bigint
+  source_answer_id bigint
+
+  question_kind varchar(30) [not null]
+
+  question_text text [not null]
+
+  sequence_no int
+
+  status varchar(20) [not null, default: 'SUGGESTED']
+
+  intent text
+
+  core_competencies json
+
+  question_type varchar(50)
+
+  star_recommended boolean [not null, default: false]
+
+  created_at timestamp [not null]
+
+  Note: '''
+  면접 질문
+
+  question_kind:
+  INITIAL
+  FOLLOW_UP
+
+  status:
+  SUGGESTED
+  ASKED
+  ANSWERED
+  SKIPPED
+
+  parent_question_id:
+  어떤 질문의 꼬리질문인지
+
+  source_answer_id:
+  어떤 답변을 기반으로
+  AI가 이 꼬리질문을 생성했는지
+  '''
+}
+
+Ref: interview_questions.session_id > speaking_sessions.id
+Ref: interview_questions.parent_question_id > interview_questions.id
+
+
+// ======================================================
+// 11. Interview Answers
+// ======================================================
+
+Table interview_answers {
+  id bigint [pk, increment]
+
+  question_id bigint [not null, unique]
+
+  answer_text text [not null]
+
+  submitted_at timestamp [not null]
+
+  Note: '''
+  면접 질문에 대한 사용자의 확정 답변
+
+  MVP에서는 질문 하나당
+  최종 답변 하나만 저장
+  '''
+}
+
+Ref: interview_answers.question_id > interview_questions.id
+Ref: interview_questions.source_answer_id > interview_answers.id
+
+
+// ======================================================
+// 12. Interview Answer Feedback
+// ======================================================
+
+Table interview_answer_feedbacks {
+  id bigint [pk, increment]
+
+  answer_id bigint [not null, unique]
+
+  overall_score decimal(5,2)
+
+  evaluation_summary text
+
+  strengths json
+  weaknesses json
+
+  coaching_summary text
+  improvement_tips json
+
+  improved_answer text
+
+  rubric_version varchar(30)
+
+  generation_status varchar(20) [not null, default: 'PENDING']
+
+  generated_at timestamp
+
+  Note: '''
+  질문 하나의 답변에 대한 상세 피드백
+
+  기존 InterviewBridge AI의
+
+  Answer Evaluator
+  → Reflection
+  → Interview Coach
+
+  결과 중 최종 검토된 결과를 저장
+
+  generation_status:
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  '''
+}
+
+Ref: interview_answer_feedbacks.answer_id > interview_answers.id
+
+
+// ======================================================
+// 13. Interview Evaluation Scores
+// ======================================================
+
+Table interview_evaluation_scores {
+  id bigint [pk, increment]
+
+  answer_feedback_id bigint [not null]
+
+  criterion varchar(50) [not null]
+
+  score decimal(5,2)
+
+  feedback text
+
+  applicable boolean [not null, default: true]
+
+  indexes {
+    (answer_feedback_id, criterion) [unique]
+  }
+
+  Note: '''
+  면접 답변의 항목별 평가
+
+  기존 InterviewBridge 기준:
+  LOGICAL_THINKING
+  SPECIFICITY
+  COMMUNICATION
+  JOB_FIT
+  STAR_STRUCTURE
+
+  신규 후보:
+  QUESTION_RELEVANCE
+  BUSINESS_JAPANESE
+
+  평가 불가능한 항목은
+  applicable = false
+  score = null
+  '''
+}
+
+Ref: interview_evaluation_scores.answer_feedback_id > interview_answer_feedbacks.id
+
+
+// ======================================================
+// 14. Interview Overall Feedback
+// ======================================================
+
+Table interview_feedbacks {
+  id bigint [pk, increment]
+
+  session_id bigint [not null, unique]
+
+  overall_score decimal(5,2)
+
+  summary text
+
+  strengths json
+  improvements json
+
+  evaluated_answer_count int
+
+  rubric_version varchar(30)
+
+  generation_status varchar(20) [not null, default: 'PENDING']
+
+  generated_at timestamp
+
+  Note: '''
+  면접 전체 종료 후 생성되는 종합 피드백
+
+  질문 하나에 대한 피드백이 아니라
+  세션 전체를 평가
+
+  질문별 상세 평가는
+  interview_answer_feedbacks 사용
+
+  generation_status:
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  '''
+}
+
+Ref: interview_feedbacks.session_id > speaking_sessions.id

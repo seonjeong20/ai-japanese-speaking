@@ -206,6 +206,8 @@ Learner·Manager·Admin의 공통 계정과 승인 상태. Admin은 기관 없�
 | `category` | `varchar(30)` | not null |
 | `original_expression` | `text` | not null |
 | `suggested_expression` | `text` | not null |
+| `reading` | `text` | NULL 허용 |
+| `korean_translation` | `text` | NULL 허용 |
 | `explanation` | `text` | NULL 허용 |
 | `display_order` | `int` | not null |
 
@@ -675,6 +677,8 @@ user_preferences만 변경하며 이미 생성된 세션 settings를 수정하�
       "category": "NATURALNESS",
       "originalExpression": "...",
       "suggestedExpression": "...",
+      "reading": "...",
+      "koreanTranslation": "...",
       "explanation": "..."
     }
   ]
@@ -1095,6 +1099,8 @@ AI 출력:
       "category": "NATURALNESS",
       "originalExpression": "私はコーヒーを飲みたいです。",
       "suggestedExpression": "コーヒー飲みたいな。",
+      "reading": "コーヒーのみたいな。",
+      "koreanTranslation": "커피 마시고 싶다.",
       "explanation": "친구와의 일상적인 대화에서는 주어를 생략하고 조금 더 캐주얼하게 표현할 수 있습니다."
     }
   ]

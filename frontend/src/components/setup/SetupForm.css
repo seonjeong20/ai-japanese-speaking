@@ -276,6 +276,13 @@
   pointer-events: none;
 }
 
+.setup-page__error {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-live-dot);
+}
+
 /* Responsive fallback for narrow viewports */
 
 @media (max-width: 700px) {

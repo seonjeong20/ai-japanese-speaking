@@ -123,4 +123,8 @@ public class User {
     public LocalDateTime getLastLoginAt() {
         return lastLoginAt;
     }
+
+    public void updateLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
 }

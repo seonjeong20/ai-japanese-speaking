@@ -1,19 +1,33 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { login } from '../../api/auth'
 
 function SignInForm({ onSwitchToSignUp }) {
   const [formData, setFormData] = useState({ email: '', password: '' })
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
 
   const handleChange = (event) => {
     const { name, value } = event.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    setErrorMessage('')
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    // Backend 인증 연동 전까지는 UI 확인을 위해 바로 대시보드로 이동합니다.
-    navigate('/dashboard')
+    if (isSubmitting) return
+
+    setSubmitting(true)
+    setErrorMessage('')
+    try {
+      await login(formData.email, formData.password)
+      navigate('/dashboard')
+    } catch (error) {
+      setErrorMessage(error.message || '로그인에 실패했습니다.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -68,8 +82,14 @@ function SignInForm({ onSwitchToSignUp }) {
         </button>
       </div>
 
-      <button type="submit" className="auth-button auth-button--primary">
-        로그인
+      {errorMessage && (
+        <p className="auth-field__error" role="alert">
+          {errorMessage}
+        </p>
+      )}
+
+      <button type="submit" className="auth-button auth-button--primary" disabled={isSubmitting}>
+        {isSubmitting ? '로그인 중...' : '로그인'}
       </button>
 
       <p className="auth-form__switch">

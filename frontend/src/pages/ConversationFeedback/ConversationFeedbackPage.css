@@ -100,6 +100,20 @@
   color: var(--color-text-primary);
 }
 
+.conversation-feedback-correction__reading {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.conversation-feedback-correction__translation {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .conversation-feedback-correction__note {
   margin: 0;
   font-size: 12.5px;

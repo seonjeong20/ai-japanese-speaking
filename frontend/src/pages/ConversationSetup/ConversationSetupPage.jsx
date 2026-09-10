@@ -9,6 +9,7 @@ import SetupPageHeader from '../../components/setup/SetupPageHeader'
 import { CharacterIcon, DescriptionIcon, PersonalityIcon, SituationIcon } from '../../components/icons/DashboardIcons'
 import { DIFFICULTY_OPTIONS, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
 import { defaultSpeakingSettings } from '../../data/settingsMock'
+import { startConversation } from '../../api/conversations'
 import '../../components/setup/SetupForm.css'
 
 const SITUATION_OPTIONS = ['카페에서', '여행 중', '쇼핑할 때', '학교에서', '직장에서', '일상 대화']
@@ -27,6 +28,8 @@ function ConversationSetupPage() {
     difficulty: defaultSpeakingSettings.difficulty,
     subtitleMode: defaultSpeakingSettings.subtitleMode,
   })
+  const [isStarting, setStarting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const updateSetting = (key, value) => {
     setConversationSettings((prev) => ({ ...prev, [key]: value }))
@@ -34,8 +37,19 @@ function ConversationSetupPage() {
 
   const handleBack = () => navigate('/learning')
 
-  const handleStartConversation = () => {
-    navigate('/conversation/speaking', { state: conversationSettings })
+  const handleStartConversation = async () => {
+    if (isStarting) return
+    setStarting(true)
+    setErrorMessage('')
+    try {
+      const session = await startConversation(conversationSettings)
+      navigate('/conversation/speaking', {
+        state: { ...conversationSettings, sessionId: session.sessionId },
+      })
+    } catch (error) {
+      setErrorMessage(error.message || '회화 세션을 시작하지 못했습니다.')
+      setStarting(false)
+    }
   }
 
   return (
@@ -103,7 +117,17 @@ function ConversationSetupPage() {
           />
         </div>
 
-        <SetupCta label="대화 시작하기 →" onClick={handleStartConversation} />
+        {errorMessage && (
+          <p className="setup-page__error" role="alert">
+            {errorMessage}
+          </p>
+        )}
+
+        <SetupCta
+          label={isStarting ? '시작하는 중...' : '대화 시작하기 →'}
+          onClick={handleStartConversation}
+          disabled={isStarting}
+        />
       </div>
     </LearnerLayout>
   )

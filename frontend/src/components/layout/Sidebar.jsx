@@ -1,6 +1,8 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDownIcon, DashboardIcon, HistoryIcon, LearningIcon, SettingsIcon } from '../icons/DashboardIcons'
 import { currentUser } from '../../data/dashboardMockData'
+import { clearSession } from '../../api/client'
 import './Sidebar.css'
 
 // `implemented: false` 메뉴는 이후 단계에서 화면이 만들어지면 라우트를 연결합니다.
@@ -17,7 +19,15 @@ const NAV_ITEMS = [
 // Manager 등 다른 역할의 Sidebar가 필요하면 이 두 prop만 다르게 넘겨서 재사용합니다.
 function Sidebar({ items = NAV_ITEMS, profile }) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const profileInfo = profile ?? { name: currentUser.name, initial: currentUser.initial }
+  const [isMenuOpen, setMenuOpen] = useState(false)
+
+  const handleLogout = () => {
+    setMenuOpen(false)
+    clearSession()
+    navigate('/', { replace: true })
+  }
 
   return (
     <aside className="sidebar">
@@ -49,10 +59,32 @@ function Sidebar({ items = NAV_ITEMS, profile }) {
         })}
       </nav>
 
-      <div className="sidebar-profile">
-        <span className="sidebar-profile__avatar">{profileInfo.initial}</span>
-        <span className="sidebar-profile__name">{profileInfo.name}</span>
-        <ChevronDownIcon size={16} className="sidebar-profile__chevron" />
+      <div className="sidebar-profile-wrap">
+        <button
+          type="button"
+          className="sidebar-profile"
+          onClick={() => setMenuOpen((prev) => !prev)}
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+        >
+          <span className="sidebar-profile__avatar">{profileInfo.initial}</span>
+          <span className="sidebar-profile__name">{profileInfo.name}</span>
+          <ChevronDownIcon
+            size={16}
+            className={`sidebar-profile__chevron${isMenuOpen ? ' sidebar-profile__chevron--open' : ''}`}
+          />
+        </button>
+
+        {isMenuOpen && (
+          <>
+            <button type="button" className="sidebar-profile-menu__backdrop" aria-label="메뉴 닫기" onClick={() => setMenuOpen(false)} />
+            <div className="sidebar-profile-menu__panel" role="menu">
+              <button type="button" role="menuitem" className="sidebar-profile-menu__item" onClick={handleLogout}>
+                로그아웃
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </aside>
   )
