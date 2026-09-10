@@ -12,7 +12,7 @@ import { defaultSpeakingSettings } from '../../data/settingsMock'
 import '../../components/setup/SetupForm.css'
 
 const JOB_OPTIONS = ['Backend Developer', 'Frontend Developer', 'AI Engineer', 'Data Engineer', 'Mobile Developer']
-const INTERVIEW_TYPE_OPTIONS = ['일반 면접', '기술 면접', '인성 면접']
+const INTERVIEW_TYPE_OPTIONS = ['일반 면접', '기술 면접', '인성 면접'].map((label) => ({ value: label, label }))
 
 function InterviewSetupPage() {
   const navigate = useNavigate()

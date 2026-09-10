@@ -4,7 +4,7 @@ import { AccountAction, AdminHeader, AdminPagination, AdminToolbar, StatusBadge 
 import AdminRegistrationModal from '../../components/admin/AdminRegistrationModal'
 
 export default function AdminCustomersPage() {
-  const { customers, managers, addCustomer, renameCustomer, changeCustomerStatus } = useOutletContext()
+  const { customers, addCustomer, renameCustomer, changeCustomerStatus } = useOutletContext()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('ALL')
   const [page, setPage] = useState(1)
@@ -27,7 +27,7 @@ export default function AdminCustomersPage() {
     </tbody></table></div>
     <AdminPagination count={filtered.length} page={currentPage} onPage={setPage} unit="개" />
     <p role="status" className="admin-notice">{notice}</p>
-    {modal && <AdminRegistrationModal kind="customer" customers={customers} managers={managers} onClose={() => setModal(false)} onSubmit={register} />}
-    {editing && <AdminRegistrationModal kind="customer" mode="edit" initialValues={editing} customers={customers} managers={managers} onClose={() => setEditing(null)} onSubmit={rename} />}
+    {modal && <AdminRegistrationModal customers={customers} onClose={() => setModal(false)} onSubmit={register} />}
+    {editing && <AdminRegistrationModal mode="edit" initialValues={editing} customers={customers} onClose={() => setEditing(null)} onSubmit={rename} />}
   </section>
 }

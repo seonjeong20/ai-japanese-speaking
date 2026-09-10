@@ -25,7 +25,6 @@ export default function AdminLayout() {
     const now = new Date().toLocaleDateString('ko-KR')
     setCustomers((rows) => rows.map((row) => row.id === id ? { ...row, name, updatedAt: now } : row))
   }
-  const addManager = (values) => setManagers((rows) => [{ ...values, id: crypto.randomUUID(), role: 'MANAGER', joinedAt: new Date().toLocaleDateString('ko-KR'), lastLogin: null, source: 'ADMIN_CREATED' }, ...rows])
   const changeCustomerStatus = (id, status) => {
     if (!['ACTIVE', 'INACTIVE'].includes(status)) return
     const now = new Date().toLocaleDateString('ko-KR')
@@ -34,6 +33,6 @@ export default function AdminLayout() {
   const changeManagerStatus = (id, status) => setManagers((rows) => rows.map((row) => row.id === id && managerTransitions[row.status].includes(status) ? { ...row, status } : row))
   return <div className="admin-layout">
     <Sidebar items={items} profile={adminProfileMock} />
-    <main className="admin-content"><Outlet context={{ customers, managers, addCustomer, renameCustomer, addManager, changeCustomerStatus, changeManagerStatus }} /></main>
+    <main className="admin-content"><Outlet context={{ customers, managers, addCustomer, renameCustomer, changeCustomerStatus, changeManagerStatus }} /></main>
   </div>
 }
