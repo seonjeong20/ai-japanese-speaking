@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { AUTH_EXPIRED_EVENT } from './api/client'
+import { Role } from './data/enums'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthPage from './pages/Auth/AuthPage'
 import DashboardPage from './pages/Dashboard/DashboardPage'
@@ -38,7 +39,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<AuthPage />} />
-      <Route element={<ProtectedRoute />}>
+      <Route element={<ProtectedRoute allowedRoles={[Role.LEARNER]} />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/learning" element={<LearningPage />} />
         <Route path="/conversation/setup" element={<ConversationSetupPage />} />
@@ -50,9 +51,13 @@ function App() {
         <Route path="/history" element={<MyHistoryPage />} />
         <Route path="/history/:id" element={<HistoryDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+      </Route>
+      <Route element={<ProtectedRoute allowedRoles={[Role.MANAGER]} />}>
         <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
         <Route path="/manager/learners" element={<ManagerLearnersPage />} />
         <Route path="/manager/settings" element={<ManagerSettingsPage />} />
+      </Route>
+      <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN]} />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />

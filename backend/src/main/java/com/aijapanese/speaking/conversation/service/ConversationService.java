@@ -168,6 +168,28 @@ public class ConversationService {
         );
     }
 
+    /**
+     * 일반회화 중도 종료. complete와 달리 Feedback AI를 호출하지 않는다.
+     */
+    @Transactional
+    public SessionCompletionResponse abortConversation(Long sessionId, Long userId) {
+        SpeakingSession session = loadOwnedInProgressSession(sessionId, userId);
+
+        if (session.getSessionType() != SessionType.CONVERSATION) {
+            throw new SpeakingSessionNotFoundException("세션을 찾을 수 없습니다.");
+        }
+
+        session.abort(LocalDateTime.now());
+
+        return new SessionCompletionResponse(
+                session.getId(),
+                session.getStatus(),
+                session.getEndedAt(),
+                session.getDurationSeconds(),
+                null
+        );
+    }
+
     @Transactional(readOnly = true)
     public ConversationFeedbackResponse getFeedback(Long sessionId, Long userId) {
         loadOwnedSession(sessionId, userId);
@@ -294,8 +316,18 @@ public class ConversationService {
         return session;
     }
 
+    /**
+     * IN_PROGRESS 세션을 변경하는 모든 작업(turn 추가, complete, abort)의 진입점이다.
+     * 세션 row를 잠가(findByIdForUpdate) 같은 세션에 대한 동시 요청이 순차적으로 처리되도록 해,
+     * speaking_messages의 sequence_no가 동시 요청으로 겹치는 것을 막는다.
+     */
     private SpeakingSession loadOwnedInProgressSession(Long sessionId, Long userId) {
-        SpeakingSession session = loadOwnedSession(sessionId, userId);
+        SpeakingSession session = speakingSessionRepository.findByIdForUpdate(sessionId)
+                .orElseThrow(() -> new SpeakingSessionNotFoundException("세션을 찾을 수 없습니다."));
+
+        if (!session.getUser().getId().equals(userId)) {
+            throw new SpeakingSessionAccessDeniedException("본인의 세션만 접근할 수 있습니다.");
+        }
 
         if (session.getStatus() != SessionStatus.IN_PROGRESS) {
             throw new SpeakingSessionNotInProgressException("진행 중인 세션에서만 가능한 작업입니다.");

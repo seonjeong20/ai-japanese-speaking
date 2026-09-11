@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
+import { Role } from '../../data/enums'
+
+const ROLE_HOME_PATH = {
+  [Role.LEARNER]: '/dashboard',
+  [Role.MANAGER]: '/manager/dashboard',
+  [Role.ADMIN]: '/admin/dashboard',
+}
 
 function SignInForm({ onSwitchToSignUp }) {
   const [formData, setFormData] = useState({ email: '', password: '' })
@@ -21,8 +28,8 @@ function SignInForm({ onSwitchToSignUp }) {
     setSubmitting(true)
     setErrorMessage('')
     try {
-      await login(formData.email, formData.password)
-      navigate('/dashboard')
+      const user = await login(formData.email, formData.password)
+      navigate(ROLE_HOME_PATH[user.role] || '/dashboard')
     } catch (error) {
       setErrorMessage(error.message || '로그인에 실패했습니다.')
     } finally {

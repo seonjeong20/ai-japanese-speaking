@@ -340,6 +340,7 @@ Learner·Manager·Admin의 공통 계정과 승인 상태. Admin은 기관 없�
 | GET | /api/conversations/{sessionId}/feedback | 내 일반회화 피드백 |
 | POST | /api/interviews | 면접 시작·첫 질문 |
 | POST | /api/interviews/{sessionId}/questions/{questionId}/answer | 답변·평가·다음 질문 |
+| POST | /api/interviews/{sessionId}/questions/{questionId}/answer/audio | 음성 답변 STT·저장·평가 |
 | POST | /api/interviews/{sessionId}/complete | 정상 종료·종합평가 |
 | POST | /api/interviews/{sessionId}/abort | 중도 종료 |
 | GET | /api/interviews/{sessionId}/feedback | 내 전체·답변별 평가 |
@@ -1193,4 +1194,3 @@ AI 출력에 맞춰 임의 컬럼을 계속 추가하는 방식이 아니라, �
 - 전체 transcript는 메시지에서 조합하며 피드백 테이블에 통째로 중복 저장하는 컬럼을 추가하지 않는다.
 
 학습용 이유와 데이터 흐름은 [설계 해설 문서](ai-japanese-speaking-design-study-notes.md)를 참고한다.
-

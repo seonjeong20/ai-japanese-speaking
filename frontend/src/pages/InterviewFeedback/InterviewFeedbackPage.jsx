@@ -1,46 +1,92 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import FeedbackHeader from '../../components/feedback/FeedbackHeader'
 import FeedbackCtaRow from '../../components/feedback/FeedbackCtaRow'
 import ScoreBar from '../../components/feedback/ScoreBar'
-import { interviewFeedbackMock } from '../../data/interviewFeedbackMock'
+import { getInterviewFeedback } from '../../api/interviews'
 import '../../components/setup/SetupForm.css'
 import '../../components/feedback/FeedbackPage.css'
 import './InterviewFeedbackPage.css'
 
 function InterviewFeedbackPage() {
   const navigate = useNavigate()
-  const { title, badgeLabel, subtitle, overall, metrics, strengths, improvements, coaching, questionFeedback } =
-    interviewFeedbackMock
+  const location = useLocation()
+  const sessionId = location.state?.sessionId
+
+  const [feedback, setFeedback] = useState(null)
+  const [isLoading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (!sessionId) {
+      navigate('/learning', { replace: true })
+      return
+    }
+
+    let cancelled = false
+    getInterviewFeedback(sessionId)
+      .then((data) => {
+        if (!cancelled) setFeedback(data)
+      })
+      .catch((error) => {
+        if (!cancelled) setErrorMessage(error.message || '면접 결과를 불러오지 못했습니다.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [sessionId, navigate])
 
   const handleBack = () => navigate('/learning')
+
+  if (isLoading) {
+    return (
+      <LearnerLayout>
+        <div className="feedback-page">
+          <p className="conversation-feedback-description">면접 결과를 불러오는 중이에요...</p>
+        </div>
+      </LearnerLayout>
+    )
+  }
+
+  if (errorMessage || !feedback) {
+    return (
+      <LearnerLayout>
+        <div className="feedback-page">
+          <FeedbackHeader title="면접 완료" subtitle="" badgeLabel="면접 완료" onBack={handleBack} />
+          <div className="feedback-card">
+            <p className="conversation-feedback-description">{errorMessage || '면접 결과를 찾을 수 없습니다.'}</p>
+          </div>
+          <FeedbackCtaRow retryTo="/interview/setup" homeTo="/learning" />
+        </div>
+      </LearnerLayout>
+    )
+  }
+
+  const { overall, answers } = feedback
 
   return (
     <LearnerLayout>
       <div className="feedback-page">
-        <FeedbackHeader title={title} subtitle={subtitle} badgeLabel={badgeLabel} onBack={handleBack} />
+        <FeedbackHeader title="면접 결과" subtitle="AI가 전체 면접을 종합했어요" badgeLabel="면접 완료" onBack={handleBack} />
 
         <div className="interview-feedback-hero">
           <div className="interview-feedback-hero__score-col">
-            <p className="interview-feedback-hero__score">{overall.score}</p>
+            <p className="interview-feedback-hero__score">{overall.overallScore}</p>
             <p className="interview-feedback-hero__score-label">종합 평가</p>
           </div>
           <div className="interview-feedback-hero__divider" />
-          <p className="interview-feedback-hero__description">{overall.description}</p>
-        </div>
-
-        <div className="feedback-card">
-          <p className="feedback-card__title">세부 평가 항목</p>
-          {metrics.map((metric) => (
-            <ScoreBar key={metric.id} label={metric.label} score={metric.score} size="md" />
-          ))}
+          <p className="interview-feedback-hero__description">{overall.summary}</p>
         </div>
 
         <div className="feedback-card">
           <div className="feedback-subsection">
             <p className="feedback-subsection__label">강점</p>
             <ul className="feedback-bullet-list">
-              {strengths.map((item, index) => (
+              {overall.strengths.map((item, index) => (
                 <li key={index} className="feedback-bullet-list__item">
                   {item}
                 </li>
@@ -51,27 +97,30 @@ function InterviewFeedbackPage() {
           <div className="feedback-subsection">
             <p className="feedback-subsection__label">개선점</p>
             <ul className="feedback-bullet-list">
-              {improvements.map((item, index) => (
+              {overall.improvements.map((item, index) => (
                 <li key={index} className="feedback-bullet-list__item">
                   {item}
                 </li>
               ))}
             </ul>
           </div>
-
-          <div className="feedback-subsection">
-            <p className="feedback-subsection__label">코칭</p>
-            <p className="feedback-subsection__text">{coaching}</p>
-          </div>
         </div>
 
         <div className="feedback-card">
           <p className="feedback-card__title">질문별 피드백</p>
           <div className="interview-feedback-qa-list">
-            {questionFeedback.map((item) => (
-              <div key={item.id} className="interview-feedback-qa">
+            {answers.map((item, index) => (
+              <div key={index} className="interview-feedback-qa">
                 <p className="interview-feedback-qa__question">{item.question}</p>
-                <p className="interview-feedback-qa__feedback">{item.feedback}</p>
+                {item.scores.map((score) => (
+                  <ScoreBar
+                    key={score.criterion}
+                    label={score.criterion}
+                    score={score.applicable ? score.score : 0}
+                    size="md"
+                  />
+                ))}
+                <p className="interview-feedback-qa__feedback">{item.coachingSummary}</p>
                 <p className="interview-feedback-qa__improved">
                   <span className="interview-feedback-qa__improved-label">개선 답변</span>
                   {item.improvedAnswer}

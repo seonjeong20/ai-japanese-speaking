@@ -1,6 +1,6 @@
 import Sidebar from './Sidebar'
 import { DashboardIcon, LearningIcon, SettingsIcon } from '../icons/DashboardIcons'
-import { managerProfileMock } from '../../data/managerMock'
+import { getCurrentUser } from '../../api/client'
 import './LearnerLayout.css'
 
 // Manager 전용 메뉴 구성입니다. Learner Sidebar와 shell/디자인은 그대로 재사용하고
@@ -11,9 +11,10 @@ const MANAGER_NAV_ITEMS = [
   { label: 'Settings', to: '/manager/settings', icon: SettingsIcon, implemented: true, matchPaths: ['/manager/settings'] },
 ]
 
-const managerProfile = { name: managerProfileMock.name, initial: managerProfileMock.initial }
-
 function ManagerLayout({ children }) {
+  const user = getCurrentUser()
+  const managerProfile = { name: user?.name ?? '', initial: user?.name ? user.name.charAt(0) : '' }
+
   return (
     <div className="learner-layout">
       <Sidebar items={MANAGER_NAV_ITEMS} profile={managerProfile} />

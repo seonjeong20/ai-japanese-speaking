@@ -20,8 +20,12 @@ import com.aijapanese.speaking.speaking.entity.SessionStatus;
 import com.aijapanese.speaking.speaking.entity.SessionType;
 import com.aijapanese.speaking.speaking.entity.Speaker;
 import com.aijapanese.speaking.speaking.entity.SpeakingMessage;
+import com.aijapanese.speaking.speaking.entity.SpeakingSession;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionAccessDeniedException;
+import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotInProgressException;
+import com.aijapanese.speaking.speaking.repository.SpeakingMessageRepository;
+import com.aijapanese.speaking.speaking.repository.SpeakingSessionRepository;
 import com.aijapanese.speaking.user.entity.User;
 import com.aijapanese.speaking.user.entity.UserRole;
 import com.aijapanese.speaking.user.entity.UserStatus;
@@ -29,6 +33,7 @@ import com.aijapanese.speaking.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -57,6 +63,12 @@ class ConversationServiceIntegrationTest {
 
     @Autowired
     private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private SpeakingSessionRepository speakingSessionRepository;
+
+    @Autowired
+    private SpeakingMessageRepository speakingMessageRepository;
 
     @MockitoBean
     private ConversationAiService conversationAiService;
@@ -235,5 +247,101 @@ class ConversationServiceIntegrationTest {
 
         assertThrows(SpeakingSessionNotInProgressException.class,
                 () -> conversationService.completeConversation(session.sessionId(), userId));
+    }
+
+    // 1. 본인 IN_PROGRESS Conversation abort 성공
+    @Test
+    void abortConversation_ownInProgressSession_succeeds() {
+        Long userId = createLearner("conv-abort-1@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+
+        SessionCompletionResponse aborted = conversationService.abortConversation(session.sessionId(), userId);
+
+        assertThat(aborted.status()).isEqualTo(SessionStatus.ABORTED);
+        assertThat(aborted.endedAt()).isNotNull();
+        assertThat(aborted.durationSeconds()).isGreaterThanOrEqualTo(0);
+        assertThat(aborted.feedbackGenerationStatus()).isNull();
+    }
+
+    // 2. 다른 사용자 session abort → 403
+    @Test
+    void abortConversation_rejectsOtherUsersSession() {
+        Long ownerId = createLearner("conv-abort-2-owner@example.com");
+        Long otherId = createLearner("conv-abort-2-other@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                ownerId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+
+        assertThrows(SpeakingSessionAccessDeniedException.class,
+                () -> conversationService.abortConversation(session.sessionId(), otherId));
+    }
+
+    // 3. 존재하지 않는 session abort → 404
+    @Test
+    void abortConversation_throwsWhenSessionNotFound() {
+        Long userId = createLearner("conv-abort-3@example.com");
+
+        assertThrows(SpeakingSessionNotFoundException.class,
+                () -> conversationService.abortConversation(999_999_999L, userId));
+    }
+
+    // 4. COMPLETED session abort 거부
+    @Test
+    void abortConversation_rejectsAlreadyCompletedSession() {
+        Long userId = createLearner("conv-abort-4@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+        conversationService.completeConversation(session.sessionId(), userId);
+
+        assertThrows(SpeakingSessionNotInProgressException.class,
+                () -> conversationService.abortConversation(session.sessionId(), userId));
+    }
+
+    // 5. ABORTED session 재-abort 거부
+    @Test
+    void abortConversation_rejectsAlreadyAbortedSession() {
+        Long userId = createLearner("conv-abort-5@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+        conversationService.abortConversation(session.sessionId(), userId);
+
+        assertThrows(SpeakingSessionNotInProgressException.class,
+                () -> conversationService.abortConversation(session.sessionId(), userId));
+    }
+
+    // 6. abort 시 Feedback AI 호출 없음
+    @Test
+    void abortConversation_neverCallsFeedbackAi() {
+        Long userId = createLearner("conv-abort-6@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+        conversationService.recordUserMessage(session.sessionId(), userId, "こんにちは");
+
+        conversationService.abortConversation(session.sessionId(), userId);
+
+        verifyNoInteractions(conversationFeedbackAiService);
+    }
+
+    // (가능하다면) speaking_messages(session_id, sequence_no) unique 제약이 실제 DB에 적용되어 있는지 확인
+    @Test
+    void speakingMessages_rejectsDuplicateSequenceNoForSameSession() {
+        Long userId = createLearner("conv-unique-seq@example.com");
+        SpeakingSessionResponse sessionResponse = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+        SpeakingSession session = speakingSessionRepository.findById(sessionResponse.sessionId()).orElseThrow();
+
+        speakingMessageRepository.saveAndFlush(
+                new SpeakingMessage(session, 1, Speaker.USER, "CONVERSATION", "こんにちは", LocalDateTime.now())
+        );
+
+        assertThrows(DataIntegrityViolationException.class, () -> speakingMessageRepository.saveAndFlush(
+                new SpeakingMessage(session, 1, Speaker.AI, "CONVERSATION", "duplicate sequence", LocalDateTime.now())
+        ));
     }
 }

@@ -7,7 +7,7 @@ import { useSpeakingStatus } from '../../components/speaking/useSpeakingStatus'
 import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
 import { BackArrowIcon, EndCallIcon, MicIcon } from '../../components/icons/DashboardIcons'
 import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
-import { completeConversation, submitAudioTurn } from '../../api/conversations'
+import { abortConversation, completeConversation, submitAudioTurn } from '../../api/conversations'
 import '../../components/setup/SetupForm.css'
 import '../../components/speaking/SpeakingSession.css'
 import './ConversationSpeakingPage.css'
@@ -67,6 +67,8 @@ function ConversationSpeakingPage() {
   const streamRef = useRef(null)
   const audioPlaybackRef = useRef(null)
   const conversationScrollRef = useRef(null)
+  // onerror 이후에도 스펙상 onstop이 뒤따라 호출되므로, 그 때 깨진 오디오를 제출하지 않도록 막는 플래그입니다.
+  const recordingFailedRef = useRef(false)
 
   // Setup을 거치지 않고 URL로 직접 들어오는 등 실제 세션 정보가 없으면
   // 대화를 진행할 수 없으므로 설정 화면으로 되돌려보냅니다.
@@ -94,7 +96,14 @@ function ConversationSpeakingPage() {
   const sessionTitle = buildSessionTitle(settings.situation, settings.partner)
   const sessionMeta = `일반 회화 · ${settings.partner} · ${DifficultyLabel[settings.difficulty]}`
 
-  const handleBack = () => navigate('/conversation/setup')
+  // 대화를 마무리하지 않고 뒤로 나가는 경우입니다. 세션이 IN_PROGRESS로 방치되지 않도록
+  // 서버에 중도 종료를 알리되, 이동 자체를 막을 정도의 오류는 아니므로 결과를 기다리지 않습니다.
+  const handleBack = () => {
+    if (sessionId) {
+      abortConversation(sessionId).catch(() => {})
+    }
+    navigate('/conversation/setup')
+  }
 
   const startRecording = async () => {
     setErrorMessage('')
@@ -105,6 +114,7 @@ function ConversationSpeakingPage() {
       const mimeType = pickRecorderMimeType()
       const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
       audioChunksRef.current = []
+      recordingFailedRef.current = false
 
       recorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
@@ -112,9 +122,25 @@ function ConversationSpeakingPage() {
         }
       }
 
+      // 권한 거부 이후의 오류입니다: 녹음 도중 장치 연결 해제 등으로 MediaRecorder 자체가
+      // 실패하는 경우를 처리합니다. 스펙상 error 이후 stop도 뒤따라 호출되므로, 그 때 깨진
+      // 오디오가 제출되지 않도록 recordingFailedRef로 막습니다.
+      recorder.onerror = (event) => {
+        console.error('MediaRecorder error', event.error ?? event)
+        recordingFailedRef.current = true
+        streamRef.current?.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+        setErrorMessage('녹음 중 문제가 발생했습니다. 다시 시도해주세요.')
+        setStatus('idle')
+      }
+
       recorder.onstop = () => {
         streamRef.current?.getTracks().forEach((track) => track.stop())
         streamRef.current = null
+        if (recordingFailedRef.current) {
+          recordingFailedRef.current = false
+          return
+        }
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
         submitTurn(blob)
       }

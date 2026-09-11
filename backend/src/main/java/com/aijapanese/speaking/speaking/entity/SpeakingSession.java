@@ -72,6 +72,12 @@ public class SpeakingSession {
         this.durationSeconds = (int) Duration.between(this.startedAt, endedAt).getSeconds();
     }
 
+    public void abort(LocalDateTime endedAt) {
+        this.status = SessionStatus.ABORTED;
+        this.endedAt = endedAt;
+        this.durationSeconds = (int) Duration.between(this.startedAt, endedAt).getSeconds();
+    }
+
     public Long getId() {
         return id;
     }

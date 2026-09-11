@@ -97,6 +97,15 @@ public class ConversationController {
         return ResponseEntity.ok(conversationService.completeConversation(sessionId, userId));
     }
 
+    @PostMapping("/{sessionId}/abort")
+    public ResponseEntity<SessionCompletionResponse> abort(
+            @PathVariable Long sessionId,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(conversationService.abortConversation(sessionId, userId));
+    }
+
     @GetMapping("/{sessionId}/feedback")
     public ResponseEntity<ConversationFeedbackResponse> getFeedback(
             @PathVariable Long sessionId,

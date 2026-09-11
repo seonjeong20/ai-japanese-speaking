@@ -9,6 +9,7 @@ import SetupPageHeader from '../../components/setup/SetupPageHeader'
 import { DescriptionIcon, JobIcon } from '../../components/icons/DashboardIcons'
 import { DIFFICULTY_OPTIONS, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
 import { defaultSpeakingSettings } from '../../data/settingsMock'
+import { startInterview } from '../../api/interviews'
 import '../../components/setup/SetupForm.css'
 
 const JOB_OPTIONS = ['Backend Developer', 'Frontend Developer', 'AI Engineer', 'Data Engineer', 'Mobile Developer']
@@ -24,6 +25,8 @@ function InterviewSetupPage() {
     additionalRequest: '',
     subtitleMode: defaultSpeakingSettings.subtitleMode,
   })
+  const [isStarting, setStarting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const updateSetting = (key, value) => {
     setInterviewSettings((prev) => ({ ...prev, [key]: value }))
@@ -31,8 +34,24 @@ function InterviewSetupPage() {
 
   const handleBack = () => navigate('/learning')
 
-  const handleStartInterview = () => {
-    navigate('/interview/speaking', { state: interviewSettings })
+  const handleStartInterview = async () => {
+    if (isStarting) return
+    if (!interviewSettings.job.trim()) {
+      setErrorMessage('지원 직무를 입력해주세요.')
+      return
+    }
+
+    setStarting(true)
+    setErrorMessage('')
+    try {
+      const result = await startInterview(interviewSettings)
+      navigate('/interview/speaking', {
+        state: { ...interviewSettings, sessionId: result.sessionId, firstQuestion: result.firstQuestion },
+      })
+    } catch (error) {
+      setErrorMessage(error.message || '면접 세션을 시작하지 못했습니다.')
+      setStarting(false)
+    }
   }
 
   return (
@@ -87,7 +106,17 @@ function InterviewSetupPage() {
           />
         </div>
 
-        <SetupCta label="면접 시작하기 →" onClick={handleStartInterview} />
+        {errorMessage && (
+          <p className="setup-page__error" role="alert">
+            {errorMessage}
+          </p>
+        )}
+
+        <SetupCta
+          label={isStarting ? '시작하는 중...' : '면접 시작하기 →'}
+          onClick={handleStartInterview}
+          disabled={isStarting}
+        />
       </div>
     </LearnerLayout>
   )

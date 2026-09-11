@@ -4,13 +4,17 @@ import com.aijapanese.speaking.auth.exception.AccountNotActiveException;
 import com.aijapanese.speaking.auth.exception.EmailAlreadyExistsException;
 import com.aijapanese.speaking.auth.exception.InvalidCredentialsException;
 import com.aijapanese.speaking.auth.exception.OrganizationNotAvailableException;
-import com.aijapanese.speaking.auth.exception.UnsupportedSignupRoleException;
 import com.aijapanese.speaking.ai.AiServiceException;
 import com.aijapanese.speaking.common.dto.ErrorResponse;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
+import com.aijapanese.speaking.interview.exception.InterviewAnswerConflictException;
+import com.aijapanese.speaking.interview.exception.InterviewFeedbackNotFoundException;
+import com.aijapanese.speaking.interview.exception.InterviewQuestionNotFoundException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionAccessDeniedException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotInProgressException;
+import com.aijapanese.speaking.user.exception.InvalidUserStatusTransitionException;
+import com.aijapanese.speaking.user.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -31,12 +35,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleOrganizationNotAvailable(OrganizationNotAvailableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("ORGANIZATION_NOT_AVAILABLE", ex.getMessage()));
-    }
-
-    @ExceptionHandler(UnsupportedSignupRoleException.class)
-    public ResponseEntity<ErrorResponse> handleUnsupportedSignupRole(UnsupportedSignupRoleException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("UNSUPPORTED_SIGNUP_ROLE", ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
@@ -75,10 +73,40 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("SESSION_NOT_IN_PROGRESS", ex.getMessage()));
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("USER_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidUserStatusTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidUserStatusTransition(InvalidUserStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("INVALID_STATUS_TRANSITION", ex.getMessage()));
+    }
+
     @ExceptionHandler(ConversationFeedbackNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleConversationFeedbackNotFound(ConversationFeedbackNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("FEEDBACK_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InterviewQuestionNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleInterviewQuestionNotFound(InterviewQuestionNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("INTERVIEW_QUESTION_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InterviewAnswerConflictException.class)
+    public ResponseEntity<ErrorResponse> handleInterviewAnswerConflict(InterviewAnswerConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("INTERVIEW_ANSWER_CONFLICT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InterviewFeedbackNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleInterviewFeedbackNotFound(InterviewFeedbackNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("INTERVIEW_FEEDBACK_NOT_FOUND", ex.getMessage()));
     }
 
     @ExceptionHandler(AiServiceException.class)

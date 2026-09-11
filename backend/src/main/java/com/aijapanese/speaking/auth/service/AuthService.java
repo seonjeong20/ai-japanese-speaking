@@ -10,7 +10,6 @@ import com.aijapanese.speaking.auth.exception.AccountNotActiveException;
 import com.aijapanese.speaking.auth.exception.EmailAlreadyExistsException;
 import com.aijapanese.speaking.auth.exception.InvalidCredentialsException;
 import com.aijapanese.speaking.auth.exception.OrganizationNotAvailableException;
-import com.aijapanese.speaking.auth.exception.UnsupportedSignupRoleException;
 import com.aijapanese.speaking.auth.security.JwtTokenProvider;
 import com.aijapanese.speaking.organization.entity.Organization;
 import com.aijapanese.speaking.organization.entity.OrganizationStatus;
@@ -47,10 +46,6 @@ public class AuthService {
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        if (request.role() != SignupRole.LEARNER) {
-            throw new UnsupportedSignupRoleException("현재는 LEARNER 가입만 지원합니다.");
-        }
-
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException("이미 가입된 이메일입니다.");
         }
@@ -62,6 +57,11 @@ public class AuthService {
             throw new OrganizationNotAvailableException("선택한 기관은 현재 가입할 수 없는 상태입니다.");
         }
 
+        UserRole role = switch (request.role()) {
+            case LEARNER -> UserRole.LEARNER;
+            case MANAGER -> UserRole.MANAGER;
+        };
+
         String passwordHash = passwordEncoder.encode(request.password());
 
         User user = new User(
@@ -70,19 +70,18 @@ public class AuthService {
                 request.email(),
                 passwordHash,
                 request.department(),
-                UserRole.LEARNER,
+                role,
                 UserStatus.PENDING,
                 LocalDateTime.now()
         );
 
         User saved = userRepository.save(user);
 
-        return new SignupResponse(
-                saved.getId(),
-                SignupRole.LEARNER,
-                saved.getStatus(),
-                "가입 신청이 완료되었습니다. 소속 기관 매니저 승인 후 이용할 수 있습니다."
-        );
+        String message = request.role() == SignupRole.MANAGER
+                ? "가입 신청이 완료되었습니다. 시스템 관리자 승인 후 이용할 수 있습니다."
+                : "가입 신청이 완료되었습니다. 소속 기관 매니저 승인 후 이용할 수 있습니다.";
+
+        return new SignupResponse(saved.getId(), request.role(), saved.getStatus(), message);
     }
 
     @Transactional
