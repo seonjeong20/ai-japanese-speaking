@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { signup } from '../../api/auth'
+import { fetchSignupOrganizations } from '../../api/organizations'
 import { SignUpAccountType } from '../../data/enums'
-import { fetchSignupOrganizations } from '../../data/organizationsMock'
 import { CheckIcon } from '../icons/DashboardIcons'
 
 const ACCOUNT_TYPE_OPTIONS = [
@@ -23,14 +24,34 @@ const APPROVAL_NOTICE = {
   [SignUpAccountType.MANAGER]: '시스템 관리자의 승인 후 서비스를 이용할 수 있습니다.',
 }
 
+const SIGNUP_ERROR_MESSAGES = {
+  EMAIL_ALREADY_EXISTS: '이미 가입된 이메일입니다.',
+  ORGANIZATION_NOT_AVAILABLE: '선택한 기관은 현재 가입할 수 없습니다.',
+}
+
 function SignUpForm({ onSwitchToSignIn }) {
-  const organizations = fetchSignupOrganizations()
+  const [organizations, setOrganizations] = useState([])
   const [accountType, setAccountType] = useState(SignUpAccountType.LEARNER)
   const [formData, setFormData] = useState(INITIAL_FORM)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setSubmitting] = useState(false)
   const [isSubmitted, setSubmitted] = useState(false)
 
   const isManager = accountType === SignUpAccountType.MANAGER
+
+  useEffect(() => {
+    let cancelled = false
+    fetchSignupOrganizations()
+      .then((options) => {
+        if (!cancelled) setOrganizations(options)
+      })
+      .catch(() => {
+        if (!cancelled) setErrorMessage('기관 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSelectAccountType = (value) => {
     setAccountType(value)
@@ -43,10 +64,11 @@ function SignUpForm({ onSwitchToSignIn }) {
     setErrorMessage('')
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
+    if (isSubmitting) return
 
-    const { name, email, password, confirmPassword, organizationId } = formData
+    const { name, email, password, confirmPassword, organizationId, department } = formData
 
     if (!name.trim() || !email.trim() || !password || !confirmPassword || !organizationId) {
       setErrorMessage('필수 항목을 모두 입력해 주세요.')
@@ -58,9 +80,23 @@ function SignUpForm({ onSwitchToSignIn }) {
       return
     }
 
-    // Backend가 아직 없어 실제 가입 요청은 보내지 않습니다. 가입 결과는 항상 PENDING입니다.
+    setSubmitting(true)
     setErrorMessage('')
-    setSubmitted(true)
+    try {
+      await signup({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: accountType,
+        organizationId: Number(organizationId),
+        department: isManager ? department.trim() : undefined,
+      })
+      setSubmitted(true)
+    } catch (error) {
+      setErrorMessage(SIGNUP_ERROR_MESSAGES[error.code] || error.message || '가입 신청에 실패했습니다.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleSwitchToSignIn = () => {
@@ -239,8 +275,8 @@ function SignUpForm({ onSwitchToSignIn }) {
 
       <p className="auth-form__notice">{APPROVAL_NOTICE[accountType]}</p>
 
-      <button type="submit" className="auth-button auth-button--primary">
-        가입 신청
+      <button type="submit" className="auth-button auth-button--primary" disabled={isSubmitting}>
+        {isSubmitting ? '가입 신청 중...' : '가입 신청'}
       </button>
 
       <p className="auth-form__switch">

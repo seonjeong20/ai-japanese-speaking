@@ -61,6 +61,21 @@ class ApiError extends Error {
   }
 }
 
+const NETWORK_ERROR_MESSAGE = '서버에 연결할 수 없습니다. 네트워크 연결을 확인한 후 다시 시도해주세요.'
+
+// fetch() 자체가 실패하는 경우(서버 다운, 인터넷 연결 끊김, CORS 등)는 HTTP 응답이 없어
+// parseResponse를 타지 않습니다. 이때 브라우저가 던지는 "Failed to fetch" 같은 원문 메시지가
+// 그대로 사용자에게 노출되지 않도록, 여기서 한 번 감싸 동일한 ApiError로 통일합니다.
+async function requestJson(url, options) {
+  let response
+  try {
+    response = await fetch(url, options)
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', NETWORK_ERROR_MESSAGE)
+  }
+  return parseResponse(response)
+}
+
 // JSON 요청/응답 전용 헬퍼입니다. 인증이 필요한 요청에는 저장된 JWT를 자동으로 실어 보냅니다.
 export async function apiFetch(path, { method = 'GET', body, auth = true } = {}) {
   const headers = {}
@@ -70,13 +85,11 @@ export async function apiFetch(path, { method = 'GET', body, auth = true } = {})
     if (token) headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  return requestJson(`${API_BASE_URL}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
-
-  return parseResponse(response)
 }
 
 // multipart/form-data 요청 전용 헬퍼입니다 (오디오 업로드). Content-Type은 브라우저가
@@ -86,13 +99,11 @@ export async function apiFetchFormData(path, formData) {
   const token = getToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  return requestJson(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers,
     body: formData,
   })
-
-  return parseResponse(response)
 }
 
 async function parseResponse(response) {

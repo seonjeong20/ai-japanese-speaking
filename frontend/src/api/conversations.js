@@ -27,6 +27,11 @@ export function completeConversation(sessionId) {
   return apiFetch(`/api/conversations/${sessionId}/complete`, { method: 'POST' })
 }
 
+// POST /api/conversations/{sessionId}/abort — 중도 종료 (Feedback 생성 없음)
+export function abortConversation(sessionId) {
+  return apiFetch(`/api/conversations/${sessionId}/abort`, { method: 'POST' })
+}
+
 // GET /api/conversations/{sessionId}/feedback — 저장된 Feedback 조회 (AI 재호출 없음)
 export function getConversationFeedback(sessionId) {
   return apiFetch(`/api/conversations/${sessionId}/feedback`)

@@ -127,4 +127,8 @@ public class User {
     public void updateLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
     }
+
+    public void updateStatus(UserStatus status) {
+        this.status = status;
+    }
 }

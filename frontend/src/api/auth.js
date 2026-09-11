@@ -9,3 +9,12 @@ export async function login(email, password) {
   setSession(response.accessToken, response.user)
   return response.user
 }
+
+// POST /api/auth/signup — LEARNER/MANAGER 가입 신청 (결과는 항상 PENDING)
+export function signup({ name, email, password, role, organizationId, department }) {
+  return apiFetch('/api/auth/signup', {
+    method: 'POST',
+    body: { name, email, password, role, organizationId, department: department || undefined },
+    auth: false,
+  })
+}

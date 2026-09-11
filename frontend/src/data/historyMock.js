@@ -27,12 +27,11 @@ export const historyMock = [
       overallComment: '전반적으로 자연스럽게 대화를 이어갔어요. 조사 사용과 일부 표현을 조금 다듬으면 더욱 자연스러운 일본어가 됩니다.',
       naturalness: {
         label: '자연스러움',
-        score: 92,
         description:
           '전반적으로 자연스럽게 대화를 이어갔어요. 조사 사용과 일부 표현을 조금 다듬으면 더욱 자연스러운 일본어가 됩니다.',
       },
-      grammar: { label: '문법', score: 88, description: '조사와 활용 대부분이 정확했어요.' },
-      vocabulary: { label: '어휘', score: 90, description: '상황에 맞는 표현을 폭넓게 사용했어요.' },
+      grammar: { label: '문법', description: '조사와 활용 대부분이 정확했어요.' },
+      vocabulary: { label: '어휘', description: '상황에 맞는 표현을 폭넓게 사용했어요.' },
       strengths: ['자연스러운 속도로 대화를 이어갔어요.', '상대방 말에 적절히 리액션했어요.'],
       corrections: [
         {
@@ -115,11 +114,10 @@ export const historyMock = [
       overallComment: '일상적인 화제를 자연스럽게 이어갔어요. 몇몇 문장에서 시제 표현을 다듬으면 더 좋아집니다.',
       naturalness: {
         label: '자연스러움',
-        score: 84,
         description: '일상적인 화제를 자연스럽게 이어갔어요. 몇몇 문장에서 시제 표현을 다듬으면 더 좋아집니다.',
       },
-      grammar: { label: '문법', score: 80, description: 'い형용사 과거형 활용에서 실수가 있었어요.' },
-      vocabulary: { label: '어휘', score: 83, description: '일상 대화에 필요한 어휘를 무난하게 사용했어요.' },
+      grammar: { label: '문법', description: 'い형용사 과거형 활용에서 실수가 있었어요.' },
+      vocabulary: { label: '어휘', description: '일상 대화에 필요한 어휘를 무난하게 사용했어요.' },
       strengths: ['자연스럽게 화제를 전환했어요.'],
       corrections: [
         {
@@ -187,11 +185,10 @@ export const historyMock = [
       overallComment: '상황에 맞는 표현을 적절히 사용했어요. 길 안내 관련 어휘를 폭넓게 활용했습니다.',
       naturalness: {
         label: '자연스러움',
-        score: 90,
         description: '상황에 맞는 표현을 적절히 사용했어요. 길 안내 관련 어휘를 폭넓게 활용했습니다.',
       },
-      grammar: { label: '문법', score: 87, description: '조사 사용이 대체로 정확했어요.' },
-      vocabulary: { label: '어휘', score: 89, description: '길 안내 관련 표현을 다양하게 사용했어요.' },
+      grammar: { label: '문법', description: '조사 사용이 대체로 정확했어요.' },
+      vocabulary: { label: '어휘', description: '길 안내 관련 표현을 다양하게 사용했어요.' },
       strengths: ['필요한 정보를 정중하게 요청했어요.'],
       corrections: [
         {

@@ -82,16 +82,19 @@ function HistoryDetailPage() {
 
             <div className="feedback-card">
               <p className="feedback-card__title">세부 평가</p>
-              <ScoreBar
-                label={entry.feedback.naturalness.label}
-                score={entry.feedback.naturalness.score}
-                size="lg"
-              />
-              <p className="conversation-feedback-description">{entry.feedback.naturalness.description}</p>
-              <ScoreBar label={entry.feedback.grammar.label} score={entry.feedback.grammar.score} size="md" />
-              <p className="conversation-feedback-description">{entry.feedback.grammar.description}</p>
-              <ScoreBar label={entry.feedback.vocabulary.label} score={entry.feedback.vocabulary.score} size="md" />
-              <p className="conversation-feedback-description">{entry.feedback.vocabulary.description}</p>
+              {/* 일반 회화는 숫자 점수를 사용하지 않으므로(ai-design.md 7.3) 텍스트 코멘트만 표시합니다. */}
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">{entry.feedback.naturalness.label}</p>
+                <p className="conversation-feedback-description">{entry.feedback.naturalness.description}</p>
+              </div>
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">{entry.feedback.grammar.label}</p>
+                <p className="conversation-feedback-description">{entry.feedback.grammar.description}</p>
+              </div>
+              <div className="feedback-subsection">
+                <p className="feedback-subsection__label">{entry.feedback.vocabulary.label}</p>
+                <p className="conversation-feedback-description">{entry.feedback.vocabulary.description}</p>
+              </div>
             </div>
 
             <div className="feedback-card">

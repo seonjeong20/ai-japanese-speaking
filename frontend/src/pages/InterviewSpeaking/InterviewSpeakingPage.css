@@ -73,3 +73,112 @@
 .speaking-subtitle-off--dark {
   color: rgba(255, 255, 255, 0.6);
 }
+
+.interview-evaluation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 24px;
+  border-radius: var(--radius-panel-lg);
+  background: var(--color-white);
+}
+
+.interview-evaluation__answer,
+.interview-evaluation__header,
+.interview-score-card,
+.interview-evaluation__lists > div {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.interview-evaluation__answer span,
+.interview-evaluation__header span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.interview-evaluation__answer p,
+.interview-evaluation__header p,
+.interview-score-card p {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+.interview-evaluation__header > div,
+.interview-score-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.interview-evaluation__header strong {
+  font-size: 28px;
+  color: var(--color-charcoal);
+}
+
+.interview-evaluation__scores,
+.interview-evaluation__lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.interview-score-card span {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.interview-evaluation__lists ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.interview-evaluation__star {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.interview-coaching {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.interview-coaching > div {
+  padding: 16px;
+  border: 1px solid rgba(35, 38, 34, 0.08);
+  border-radius: 12px;
+}
+
+.interview-coaching p,
+.interview-coaching ul {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+.interview-coaching ul {
+  padding-left: 20px;
+}
+
+.interview-complete-message {
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  text-align: center;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .interview-evaluation__scores,
+  .interview-evaluation__lists {
+    grid-template-columns: 1fr;
+  }
+}

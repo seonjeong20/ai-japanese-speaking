@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ManagerLayout from '../../components/layout/ManagerLayout'
 import { ChevronDownIcon, ChevronLeftSmallIcon, ChevronRightSmallIcon } from '../../components/icons/DashboardIcons'
-import { managerLearnersMock } from '../../data/managerLearnersMock'
+import {
+  activateLearner,
+  approveLearner,
+  deactivateLearner,
+  fetchManagedLearners,
+  rejectLearner,
+} from '../../api/manager'
 import './ManagerLearnersPage.css'
 
 const STATUS_TABS = [
@@ -26,16 +32,50 @@ const STATUS_META = {
 
 const PAGE_SIZE = 6
 
+// 백엔드 응답(userId/createdAt/studyCount/lastActivityAt)을 기존 화면이 쓰던 필드 이름으로 맞춥니다.
+function toViewModel(item) {
+  const createdAt = new Date(item.createdAt)
+  const lastActivityAt = item.lastActivityAt ? new Date(item.lastActivityAt) : null
+  return {
+    id: item.userId,
+    name: item.name,
+    email: item.email,
+    status: item.status,
+    joinedAt: `${createdAt.getFullYear()}.${String(createdAt.getMonth() + 1).padStart(2, '0')}.${String(createdAt.getDate()).padStart(2, '0')}`,
+    sessionCount: item.studyCount,
+    lastActivity: lastActivityAt ? `${lastActivityAt.getMonth() + 1}월 ${lastActivityAt.getDate()}일` : null,
+  }
+}
+
 function ManagerLearnersPage() {
   const [searchParams] = useSearchParams()
   const statusParam = searchParams.get('status')?.toUpperCase()
   const initialStatus = VALID_STATUS_IDS.includes(statusParam) ? statusParam : 'ALL'
 
-  const [learners, setLearners] = useState(managerLearnersMock)
+  const [learners, setLearners] = useState([])
+  const [isLoading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [statusFilter, setStatusFilter] = useState(initialStatus)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [openMenuId, setOpenMenuId] = useState(null)
+
+  const fetchAndSetLearners = () =>
+    fetchManagedLearners()
+      .then((items) => setLearners(items.map(toViewModel)))
+      .catch((error) => setLoadError(error.message || '학습자 목록을 불러오지 못했습니다.'))
+      .finally(() => setLoading(false))
+
+  useEffect(() => {
+    fetchAndSetLearners()
+  }, [])
+
+  const loadLearners = () => {
+    setLoading(true)
+    setLoadError('')
+    fetchAndSetLearners()
+  }
 
   const handleSelectStatus = (statusId) => {
     setStatusFilter(statusId)
@@ -47,22 +87,25 @@ function ManagerLearnersPage() {
     setPage(1)
   }
 
-  const handleApprove = (id) => {
-    setLearners((prev) => prev.map((learner) => (learner.id === id ? { ...learner, status: 'ACTIVE' } : learner)))
+  const runAction = async (action, id, nextStatus) => {
+    setActionError('')
+    try {
+      await action(id)
+      setLearners((prev) => prev.map((learner) => (learner.id === id ? { ...learner, status: nextStatus } : learner)))
+    } catch (error) {
+      setActionError(error.message || '요청을 처리하지 못했습니다.')
+    }
   }
 
-  const handleReject = (id) => {
-    setLearners((prev) => prev.map((learner) => (learner.id === id ? { ...learner, status: 'REJECTED' } : learner)))
-  }
+  const handleApprove = (id) => runAction(approveLearner, id, 'ACTIVE')
+
+  const handleReject = (id) => runAction(rejectLearner, id, 'REJECTED')
 
   const handleToggleActive = (id) => {
-    setLearners((prev) =>
-      prev.map((learner) =>
-        learner.id === id
-          ? { ...learner, status: learner.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }
-          : learner,
-      ),
-    )
+    const learner = learners.find((item) => item.id === id)
+    const action = learner?.status === 'ACTIVE' ? deactivateLearner : activateLearner
+    const nextStatus = learner?.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    runAction(action, id, nextStatus)
     setOpenMenuId(null)
   }
 
@@ -88,6 +131,17 @@ function ManagerLearnersPage() {
           <h1 className="manager-learners-page__title">학습자 관리</h1>
           <p className="manager-learners-page__subtitle">학습자 가입 승인 및 계정을 관리하세요</p>
         </div>
+
+        {actionError && (
+          <p className="manager-table__empty" role="alert">{actionError}</p>
+        )}
+
+        {loadError && (
+          <p className="manager-table__empty" role="alert">
+            {loadError}{' '}
+            <button type="button" className="manager-table__button" onClick={loadLearners}>다시 시도</button>
+          </p>
+        )}
 
         <div className="manager-status-tabs" role="tablist" aria-label="상태 필터">
           {STATUS_TABS.map((tab) => {
@@ -218,7 +272,10 @@ function ManagerLearnersPage() {
             )
           })}
 
-          {pageItems.length === 0 && <p className="manager-table__empty">조건에 맞는 학습자가 없어요.</p>}
+          {isLoading && <p className="manager-table__empty">불러오는 중...</p>}
+          {!isLoading && !loadError && pageItems.length === 0 && (
+            <p className="manager-table__empty">조건에 맞는 학습자가 없어요.</p>
+          )}
         </div>
 
         <div className="manager-pagination-row">

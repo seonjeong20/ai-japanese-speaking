@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDownIcon, DashboardIcon, HistoryIcon, LearningIcon, SettingsIcon } from '../icons/DashboardIcons'
-import { currentUser } from '../../data/dashboardMockData'
-import { clearSession } from '../../api/client'
+import { clearSession, getCurrentUser } from '../../api/client'
 import './Sidebar.css'
 
 // `implemented: false` 메뉴는 이후 단계에서 화면이 만들어지면 라우트를 연결합니다.
@@ -20,7 +19,11 @@ const NAV_ITEMS = [
 function Sidebar({ items = NAV_ITEMS, profile }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const profileInfo = profile ?? { name: currentUser.name, initial: currentUser.initial }
+  const loggedInUser = getCurrentUser()
+  const profileInfo = profile ?? {
+    name: loggedInUser?.name ?? '',
+    initial: loggedInUser?.name ? loggedInUser.name.charAt(0) : '',
+  }
   const [isMenuOpen, setMenuOpen] = useState(false)
 
   const handleLogout = () => {

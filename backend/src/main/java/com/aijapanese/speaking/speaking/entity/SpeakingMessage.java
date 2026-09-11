@@ -11,11 +11,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "speaking_messages")
+@Table(
+        name = "speaking_messages",
+        uniqueConstraints = @UniqueConstraint(name = "uk_speaking_messages_session_sequence", columnNames = {"session_id", "sequence_no"})
+)
 public class SpeakingMessage {
 
     @Id
