@@ -61,4 +61,14 @@ public class Organization {
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
+    public void rename(String name, LocalDateTime updatedAt) {
+        this.name = name;
+        this.updatedAt = updatedAt;
+    }
+
+    public void changeStatus(OrganizationStatus status, LocalDateTime updatedAt) {
+        this.status = status;
+        this.updatedAt = updatedAt;
+    }
 }

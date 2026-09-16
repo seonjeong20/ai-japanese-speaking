@@ -267,4 +267,46 @@ class AuthAccessControlIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INVALID_STATUS_TRANSITION"));
     }
+
+    // 13. ACTIVE 사용자의 토큰은 발급 이후에도 계속 인증에 성공한다 (회귀 방지)
+    @Test
+    void activeUserToken_continuesToAuthenticate() throws Exception {
+        Organization org = activeOrganization("jwt-active-continues");
+        User learner = createUser(org, "jwt-active-continues@test.com", UserRole.LEARNER, UserStatus.ACTIVE);
+        String token = jwtTokenProvider.generateToken(learner.getId(), UserRole.LEARNER);
+
+        mockMvc.perform(get("/api/history")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    // 14. 토큰 발급 당시 ACTIVE였던 사용자가 이후 REJECTED로 전환되면, 동일 토큰의 다음 요청은 거부된다
+    @Test
+    void tokenIsRejected_afterUserIsRejectedAfterIssuance() throws Exception {
+        Organization org = activeOrganization("jwt-rejected-after-issue");
+        User learner = createUser(org, "jwt-rejected-after-issue@test.com", UserRole.LEARNER, UserStatus.ACTIVE);
+        String token = jwtTokenProvider.generateToken(learner.getId(), UserRole.LEARNER);
+
+        learner.updateStatus(UserStatus.REJECTED);
+        userRepository.save(learner);
+
+        mockMvc.perform(get("/api/history")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // 15. 토큰 발급 당시 ACTIVE였던 사용자가 이후 INACTIVE로 전환되면, 동일 토큰의 다음 요청은 거부된다
+    @Test
+    void tokenIsRejected_afterUserIsDeactivatedAfterIssuance() throws Exception {
+        Organization org = activeOrganization("jwt-inactive-after-issue");
+        User learner = createUser(org, "jwt-inactive-after-issue@test.com", UserRole.LEARNER, UserStatus.ACTIVE);
+        String token = jwtTokenProvider.generateToken(learner.getId(), UserRole.LEARNER);
+
+        learner.updateStatus(UserStatus.INACTIVE);
+        userRepository.save(learner);
+
+        mockMvc.perform(get("/api/history")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
+    }
 }

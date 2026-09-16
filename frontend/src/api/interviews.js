@@ -24,6 +24,11 @@ export function submitInterviewAudioAnswer(sessionId, questionId, audioBlob, fil
   )
 }
 
+// POST /api/interviews/{sessionId}/abort — 중도 종료 (Feedback 생성 없음)
+export function abortInterview(sessionId) {
+  return apiFetch(`/api/interviews/${sessionId}/abort`, { method: 'POST' })
+}
+
 // POST /api/interviews/{sessionId}/complete — 면접 정상 종료 및 종합 Feedback 생성
 export function completeInterview(sessionId) {
   return apiFetch(`/api/interviews/${sessionId}/complete`, { method: 'POST' })

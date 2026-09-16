@@ -7,7 +7,7 @@ import { useSpeakingStatus } from '../../components/speaking/useSpeakingStatus'
 import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
 import { BackArrowIcon, CheckIcon, JobIcon } from '../../components/icons/DashboardIcons'
 import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
-import { completeInterview, submitInterviewAudioAnswer } from '../../api/interviews'
+import { abortInterview, completeInterview, submitInterviewAudioAnswer } from '../../api/interviews'
 import '../../components/setup/SetupForm.css'
 import '../../components/speaking/SpeakingSession.css'
 import './InterviewSpeakingPage.css'
@@ -124,7 +124,14 @@ function InterviewSpeakingPage() {
 
   const handleBackClick = () => setEndModalOpen(true)
   const handleContinue = () => setEndModalOpen(false)
-  const handleExitInterview = () => navigate('/interview/setup')
+  // 면접을 마무리하지 않고 나가는 경우입니다. 세션이 IN_PROGRESS로 방치되지 않도록
+  // 서버에 중도 종료를 알리되, 이동 자체를 막을 정도의 오류는 아니므로 결과를 기다리지 않습니다.
+  const handleExitInterview = () => {
+    if (sessionId) {
+      abortInterview(sessionId).catch(() => {})
+    }
+    navigate('/interview/setup')
+  }
   const handleNextQuestion = () => {
     if (!answerResult?.nextQuestion) return
     setCurrentQuestion(answerResult.nextQuestion)

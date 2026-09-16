@@ -1,5 +1,10 @@
 import { apiFetch } from './client'
 
+// GET /api/manager/dashboard — 내 기관 이용현황 집계 (완료된 세션 기준, 다른 기관 데이터는 포함되지 않음)
+export function fetchManagerDashboard() {
+  return apiFetch('/api/manager/dashboard')
+}
+
 // GET /api/manager/learners — 내 기관 소속 Learner 목록 (개별 발화/피드백은 절대 포함되지 않음)
 export async function fetchManagedLearners() {
   const response = await apiFetch('/api/manager/learners')

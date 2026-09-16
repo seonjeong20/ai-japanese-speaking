@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import { BriefcaseIcon, ChatIcon, ChevronRightIcon } from '../../components/icons/DashboardIcons'
-import { historyMock } from '../../data/historyMock'
+import { getMyHistory } from '../../api/history'
 import { SessionType } from '../../data/enums'
 import './MyHistoryPage.css'
 
@@ -17,10 +17,48 @@ const TYPE_META = {
   [SessionType.INTERVIEW]: { label: '면접 회화', icon: BriefcaseIcon, badgeClass: 'my-history-item__icon-badge--gray' },
 }
 
+function formatDate(isoDateTime) {
+  if (!isoDateTime) return ''
+  const date = new Date(isoDateTime)
+  if (Number.isNaN(date.getTime())) return ''
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`
+}
+
+function formatDurationMinutes(durationSeconds) {
+  if (durationSeconds == null) return 0
+  return Math.round(durationSeconds / 60)
+}
+
 function MyHistoryPage() {
   const [filter, setFilter] = useState('all')
+  const [history, setHistory] = useState([])
+  const [isLoading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  const items = filter === 'all' ? historyMock : historyMock.filter((item) => item.type === filter)
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadHistory() {
+      setLoading(true)
+      setErrorMessage('')
+      try {
+        const data = await getMyHistory()
+        if (!cancelled) setHistory(data?.items ?? [])
+      } catch (error) {
+        if (!cancelled) setErrorMessage(error.message || '학습 기록을 불러오지 못했습니다.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadHistory()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const items =
+    filter === 'all' ? history : history.filter((item) => item.sessionType === filter)
 
   return (
     <LearnerLayout>
@@ -48,32 +86,38 @@ function MyHistoryPage() {
           })}
         </div>
 
-        <div className="my-history-list">
-          {items.map((item) => {
-            const meta = TYPE_META[item.type]
-            const Icon = meta.icon
-            return (
-              <Link key={item.id} to={`/history/${item.id}`} className="my-history-item">
-                <span className={`my-history-item__icon-badge ${meta.badgeClass}`}>
-                  <Icon size={18} />
-                </span>
+        {isLoading && <p className="my-history-empty">학습 기록을 불러오는 중이에요...</p>}
 
-                <div className="my-history-item__text">
-                  <p className="my-history-item__type">{meta.label}</p>
-                  <p className="my-history-item__title">{item.title}</p>
-                  <p className="my-history-item__meta">
-                    {item.date} · {item.duration}분
-                  </p>
-                </div>
+        {!isLoading && errorMessage && <p className="my-history-empty">{errorMessage}</p>}
 
-                <span className="my-history-item__badge">평가 보기</span>
-                <ChevronRightIcon size={18} className="my-history-item__chevron" />
-              </Link>
-            )
-          })}
+        {!isLoading && !errorMessage && (
+          <div className="my-history-list">
+            {items.map((item) => {
+              const meta = TYPE_META[item.sessionType]
+              const Icon = meta.icon
+              return (
+                <Link key={item.sessionId} to={`/history/${item.sessionId}`} className="my-history-item">
+                  <span className={`my-history-item__icon-badge ${meta.badgeClass}`}>
+                    <Icon size={18} />
+                  </span>
 
-          {items.length === 0 && <p className="my-history-empty">아직 학습 기록이 없어요.</p>}
-        </div>
+                  <div className="my-history-item__text">
+                    <p className="my-history-item__type">{meta.label}</p>
+                    <p className="my-history-item__title">{item.title}</p>
+                    <p className="my-history-item__meta">
+                      {formatDate(item.startedAt)} · {formatDurationMinutes(item.durationSeconds)}분
+                    </p>
+                  </div>
+
+                  <span className="my-history-item__badge">평가 보기</span>
+                  <ChevronRightIcon size={18} className="my-history-item__chevron" />
+                </Link>
+              )
+            })}
+
+            {items.length === 0 && <p className="my-history-empty">아직 학습 기록이 없어요.</p>}
+          </div>
+        )}
       </div>
     </LearnerLayout>
   )

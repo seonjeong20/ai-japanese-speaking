@@ -16,7 +16,8 @@ export default function AdminRegistrationModal({ mode = 'create', initialValues,
     document.body.style.overflow = 'hidden'
     return () => { element.close(); document.body.style.overflow = overflow; previous?.focus() }
   }, [])
-  const submit = (event) => {
+  const [submitting, setSubmitting] = useState(false)
+  const submit = async (event) => {
     event.preventDefault()
     const form = event.currentTarget
     const values = Object.fromEntries(new FormData(form))
@@ -28,8 +29,18 @@ export default function AdminRegistrationModal({ mode = 'create', initialValues,
     }
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) { form.elements[Object.keys(nextErrors)[0]]?.focus(); return }
-    onSubmit(values)
-    onClose()
+    setSubmitting(true)
+    try {
+      await onSubmit(values)
+      onClose()
+    } catch (error) {
+      // 클라이언트에서 못 잡은 경쟁 상태(다른 탭에서 방금 같은 이름 등록 등)는 서버가
+      // 409로 알려주므로, 그때도 동일한 필드 오류로 보여준다.
+      setErrors({ name: error.message || '기관 등록에 실패했습니다.' })
+      form.elements.name?.focus()
+    } finally {
+      setSubmitting(false)
+    }
   }
   const field = (name, label, control) => <label className="admin-field"><span>{label}</span>{control}{errors[name] && <span id={`admin-error-${name}`} className="admin-field-error" role="alert">{errors[name]}</span>}</label>
   const props = (name) => ({ name, required: true, 'aria-invalid': !!errors[name], 'aria-describedby': errors[name] ? `admin-error-${name}` : undefined })
@@ -41,7 +52,7 @@ export default function AdminRegistrationModal({ mode = 'create', initialValues,
       <div className="admin-fields">
         {field('name', '기관명', <input {...props('name')} maxLength={100} defaultValue={initialValues?.name ?? ''} placeholder="예: ABC 어학원" />)}
       </div>
-      <footer><button type="button" className="admin-button" onClick={onClose}>취소</button><button type="submit" className="admin-button admin-primary">{submitLabel}</button></footer>
+      <footer><button type="button" className="admin-button" onClick={onClose}>취소</button><button type="submit" className="admin-button admin-primary" disabled={submitting}>{submitLabel}</button></footer>
     </form>
   </dialog>
 }

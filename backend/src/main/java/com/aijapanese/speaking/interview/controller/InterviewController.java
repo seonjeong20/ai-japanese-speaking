@@ -74,6 +74,15 @@ public class InterviewController {
         ));
     }
 
+    @PostMapping("/{sessionId}/abort")
+    public ResponseEntity<SessionCompletionResponse> abort(
+            @PathVariable Long sessionId,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(interviewService.abortInterview(sessionId, userId));
+    }
+
     @PostMapping("/{sessionId}/complete")
     public ResponseEntity<SessionCompletionResponse> complete(
             @PathVariable Long sessionId,

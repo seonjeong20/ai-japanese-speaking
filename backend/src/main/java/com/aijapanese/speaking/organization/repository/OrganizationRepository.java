@@ -9,4 +9,12 @@ import java.util.List;
 public interface OrganizationRepository extends JpaRepository<Organization, Long> {
 
     List<Organization> findByStatus(OrganizationStatus status);
+
+    List<Organization> findAllByOrderByCreatedAtDesc();
+
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
+    long countByStatus(OrganizationStatus status);
 }

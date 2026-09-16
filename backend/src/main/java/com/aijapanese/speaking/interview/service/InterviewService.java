@@ -244,6 +244,25 @@ public class InterviewService {
     }
 
     /**
+     * 면접 중도 종료. complete와 달리 미답변 질문 여부를 검사하지 않고, 종합 Feedback AI도 호출하지 않는다.
+     * ConversationService.abortConversation과 동일한 패턴을 따른다.
+     */
+    @Transactional
+    public SessionCompletionResponse abortInterview(Long sessionId, Long userId) {
+        SpeakingSession session = loadOwnedInProgressInterview(sessionId, userId);
+
+        session.abort(LocalDateTime.now());
+
+        return new SessionCompletionResponse(
+                session.getId(),
+                session.getStatus(),
+                session.getEndedAt(),
+                session.getDurationSeconds(),
+                null
+        );
+    }
+
+    /**
      * 저장된 종합 Feedback과 답변별 Feedback을 조회한다. AI를 다시 호출하지 않는다.
      */
     @Transactional(readOnly = true)

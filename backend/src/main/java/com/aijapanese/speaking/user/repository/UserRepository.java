@@ -37,4 +37,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("status") UserStatus status,
             @Param("keyword") String keyword
     );
+
+    /**
+     * Manager Dashboard "소속 학습자 수": 가입 승인이 거절(REJECTED)되지 않은,
+     * 조직에 소속된 것으로 볼 수 있는 학습자 수를 센다.
+     */
+    long countByOrganization_IdAndRoleAndStatusNot(Long organizationId, UserRole role, UserStatus status);
+
+    long countByOrganization_IdAndRoleAndStatus(Long organizationId, UserRole role, UserStatus status);
+
+    long countByRoleIn(List<UserRole> roles);
+
+    long countByRoleAndStatus(UserRole role, UserStatus status);
 }

@@ -10,6 +10,8 @@ import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFou
 import com.aijapanese.speaking.interview.exception.InterviewAnswerConflictException;
 import com.aijapanese.speaking.interview.exception.InterviewFeedbackNotFoundException;
 import com.aijapanese.speaking.interview.exception.InterviewQuestionNotFoundException;
+import com.aijapanese.speaking.organization.exception.DuplicateOrganizationNameException;
+import com.aijapanese.speaking.organization.exception.OrganizationNotFoundException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionAccessDeniedException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotInProgressException;
@@ -83,6 +85,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidUserStatusTransition(InvalidUserStatusTransitionException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("INVALID_STATUS_TRANSITION", ex.getMessage()));
+    }
+
+    @ExceptionHandler(OrganizationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleOrganizationNotFound(OrganizationNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("ORGANIZATION_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicateOrganizationNameException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateOrganizationName(DuplicateOrganizationNameException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("ORGANIZATION_NAME_ALREADY_EXISTS", ex.getMessage()));
     }
 
     @ExceptionHandler(ConversationFeedbackNotFoundException.class)
