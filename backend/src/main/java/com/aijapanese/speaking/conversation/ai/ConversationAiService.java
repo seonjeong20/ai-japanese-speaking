@@ -23,6 +23,10 @@ import java.util.List;
 @Service
 public class ConversationAiService {
 
+    private static final String OPENING_INSTRUCTION =
+            "지금부터 대화를 시작합니다. 사용자는 아직 아무 말도 하지 않았습니다. "
+                    + "위에서 설정된 상황과 당신의 역할, 성격에 맞게 상대방으로서 자연스럽게 먼저 말을 건네며 대화를 시작하세요.";
+
     private final AiClient aiClient;
     private final BeanOutputConverter<ConversationAiReply> replyConverter =
             new BeanOutputConverter<>(ConversationAiReply.class);
@@ -57,6 +61,34 @@ public class ConversationAiService {
 
         messages.add(new UserMessage(userMessage + "\n\n" + replyConverter.getFormat()));
 
+        return callForReply(messages);
+    }
+
+    /**
+     * 사용자 발화 없이, 설정된 상황/역할/성격에 맞춰 상대방으로서 대화를 먼저 시작하는 첫 발화를 생성한다.
+     * generateReply와 system prompt 구성 및 응답 파싱 로직을 공유하고, 대화 이력 대신
+     * "먼저 말을 건네라"는 목적이 분명한 지시만 사용자 메시지로 전달한다는 점만 다르다.
+     */
+    public ConversationAiReply generateOpeningReply(ConversationSetting setting) {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage(buildSystemPrompt(setting)));
+        messages.add(new UserMessage(OPENING_INSTRUCTION + "\n\n" + replyConverter.getFormat()));
+
+        return callForReply(messages);
+    }
+
+    /**
+     * 이미 생성되어 저장된 AI 발화(japaneseText)를 한국어로 번역한다.
+     * opening이 이미 존재해 재사용할 때, 새로운 opening을 다시 생성하지 않으면서
+     * 응답에 필요한 한국어 자막만 다시 만들어내기 위해 사용한다.
+     */
+    public String translateToKorean(String japaneseText) {
+        String prompt = "다음 일본어 문장을 자연스러운 한국어 한 문장으로 번역하세요. 번역문만 출력하고 다른 말은 덧붙이지 마세요.\n\n"
+                + japaneseText;
+        return aiClient.chat(new Prompt(List.of(new UserMessage(prompt)))).strip();
+    }
+
+    private ConversationAiReply callForReply(List<Message> messages) {
         String raw = aiClient.chat(new Prompt(messages));
         return replyConverter.convert(raw);
     }

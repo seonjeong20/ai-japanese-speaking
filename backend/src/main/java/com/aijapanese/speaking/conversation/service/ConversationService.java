@@ -138,6 +138,39 @@ public class ConversationService {
     }
 
     /**
+     * 일반 회화 세션의 AI 선(先)발화(opening)를 반환한다.
+     * 이 세션에 opening이 아직 없다면(=세션의 첫 메시지가 없거나 AI 발화가 아니라면) 새로 생성해 저장하고,
+     * 이미 있다면 LLM으로 새 opening을 만들지 않고 기존 opening 텍스트를 재사용해 TTS/자막만 다시 구성한다.
+     * loadOwnedInProgressSession의 비관적 락 덕분에 동일 세션에 대한 동시 호출도 순차적으로 처리되어
+     * opening 메시지가 중복 저장되지 않는다.
+     */
+    @Transactional
+    public OpeningResult openConversation(Long sessionId, Long userId) {
+        SpeakingSession session = loadOwnedInProgressSession(sessionId, userId);
+
+        ConversationSetting setting = conversationSettingRepository.findBySession_Id(sessionId)
+                .orElseThrow(() -> new IllegalStateException("일반 회화 설정을 찾을 수 없습니다."));
+
+        SpeakingMessage openingMessage = speakingMessageRepository
+                .findFirstBySession_IdOrderBySequenceNoAsc(sessionId)
+                .filter(message -> message.getSpeaker() == Speaker.AI)
+                .orElse(null);
+
+        String aiKoreanSubtitle;
+        if (openingMessage != null) {
+            aiKoreanSubtitle = conversationAiService.translateToKorean(openingMessage.getContent());
+        } else {
+            ConversationAiReply reply = conversationAiService.generateOpeningReply(setting);
+            openingMessage = appendMessage(session, Speaker.AI, reply.japaneseText());
+            aiKoreanSubtitle = reply.koreanTranslation();
+        }
+
+        byte[] aiAudio = conversationAiService.synthesizeSpeech(openingMessage.getContent());
+
+        return new OpeningResult(openingMessage, aiKoreanSubtitle, aiAudio);
+    }
+
+    /**
      * 음성 기준 한 Turn을 처리한다: STT → processTextTurn → TTS.
      */
     @Transactional
@@ -341,6 +374,13 @@ public class ConversationService {
 
     public record AudioTurnResult(
             SpeakingMessage userMessage,
+            SpeakingMessage aiMessage,
+            String aiKoreanSubtitle,
+            byte[] aiAudio
+    ) {
+    }
+
+    public record OpeningResult(
             SpeakingMessage aiMessage,
             String aiKoreanSubtitle,
             byte[] aiAudio

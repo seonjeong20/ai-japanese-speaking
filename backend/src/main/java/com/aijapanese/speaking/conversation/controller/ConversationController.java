@@ -3,6 +3,7 @@ package com.aijapanese.speaking.conversation.controller;
 import com.aijapanese.speaking.ai.AiServiceException;
 import com.aijapanese.speaking.conversation.dto.ConversationAudioTurnResponse;
 import com.aijapanese.speaking.conversation.dto.ConversationFeedbackResponse;
+import com.aijapanese.speaking.conversation.dto.ConversationOpeningResponse;
 import com.aijapanese.speaking.conversation.dto.ConversationStartRequest;
 import com.aijapanese.speaking.conversation.dto.ConversationTurnRequest;
 import com.aijapanese.speaking.conversation.dto.ConversationTurnResponse;
@@ -81,6 +82,26 @@ public class ConversationController {
 
         return ResponseEntity.ok(new ConversationAudioTurnResponse(
                 MessageResponse.from(result.userMessage()),
+                MessageResponse.from(result.aiMessage()),
+                result.aiKoreanSubtitle(),
+                Base64.getEncoder().encodeToString(result.aiAudio()),
+                "audio/mpeg"
+        ));
+    }
+
+    /**
+     * 일반 회화 세션의 AI 선(先)발화를 반환한다. 이미 opening이 존재하면 새로 생성하지 않고
+     * 기존 opening 텍스트를 재사용해 동일한 응답 형태(TTS/자막 포함)로 다시 구성한다.
+     */
+    @PostMapping("/{sessionId}/opening")
+    public ResponseEntity<ConversationOpeningResponse> opening(
+            @PathVariable Long sessionId,
+            Authentication authentication
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        ConversationService.OpeningResult result = conversationService.openConversation(sessionId, userId);
+
+        return ResponseEntity.ok(new ConversationOpeningResponse(
                 MessageResponse.from(result.aiMessage()),
                 result.aiKoreanSubtitle(),
                 Base64.getEncoder().encodeToString(result.aiAudio()),
