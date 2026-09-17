@@ -12,6 +12,7 @@ import com.aijapanese.speaking.conversation.entity.Difficulty;
 import com.aijapanese.speaking.conversation.entity.GenerationStatus;
 import com.aijapanese.speaking.conversation.entity.SubtitleMode;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
+import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
 import com.aijapanese.speaking.organization.entity.Organization;
 import com.aijapanese.speaking.organization.entity.OrganizationStatus;
 import com.aijapanese.speaking.organization.repository.OrganizationRepository;
@@ -44,6 +45,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -343,5 +346,127 @@ class ConversationServiceIntegrationTest {
         assertThrows(DataIntegrityViolationException.class, () -> speakingMessageRepository.saveAndFlush(
                 new SpeakingMessage(session, 1, Speaker.AI, "CONVERSATION", "duplicate sequence", LocalDateTime.now())
         ));
+    }
+
+    // ---- AI opening(선발화) ----
+
+    @Test
+    void openConversation_firstCall_generatesAndPersistsAiOpeningMessage() {
+        Long userId = createLearner("conv-opening-1@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
+        );
+
+        when(conversationAiService.generateOpeningReply(any()))
+                .thenReturn(new ConversationAiReply("いらっしゃいませ!", "어서 오세요!"));
+        when(conversationAiService.synthesizeSpeech(anyString())).thenReturn(new byte[]{1, 2, 3});
+
+        ConversationService.OpeningResult result = conversationService.openConversation(session.sessionId(), userId);
+
+        assertThat(result.aiMessage().getContent()).isEqualTo("いらっしゃいませ!");
+        assertThat(result.aiMessage().getSequenceNo()).isEqualTo(1);
+        assertThat(result.aiMessage().getSpeaker()).isEqualTo(Speaker.AI);
+        assertThat(result.aiKoreanSubtitle()).isEqualTo("어서 오세요!");
+        assertThat(result.aiAudio()).isEqualTo(new byte[]{1, 2, 3});
+
+        List<SpeakingMessage> messages = speakingMessageRepository.findBySession_IdOrderBySequenceNoAsc(session.sessionId());
+        assertThat(messages).hasSize(1);
+    }
+
+    @Test
+    void openConversation_calledTwice_doesNotPersistAdditionalMessageOrRegenerateOpening() {
+        Long userId = createLearner("conv-opening-2@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
+        );
+
+        when(conversationAiService.generateOpeningReply(any()))
+                .thenReturn(new ConversationAiReply("いらっしゃいませ!", "어서 오세요!"));
+        when(conversationAiService.translateToKorean(anyString())).thenReturn("어서 오세요! (재번역)");
+        when(conversationAiService.synthesizeSpeech(anyString())).thenReturn(new byte[]{1, 2, 3});
+
+        ConversationService.OpeningResult first = conversationService.openConversation(session.sessionId(), userId);
+        ConversationService.OpeningResult second = conversationService.openConversation(session.sessionId(), userId);
+
+        // 재호출 시 LLM opening 생성은 다시 실행되지 않는다.
+        verify(conversationAiService, times(1)).generateOpeningReply(any());
+        // 재호출 시 기존 opening text를 사용해 한국어 자막을 다시 구성한다.
+        verify(conversationAiService, times(1)).translateToKorean("いらっしゃいませ!");
+        // TTS는 재호출마다 다시 생성된다 (audio 자체는 저장되지 않으므로).
+        verify(conversationAiService, times(2)).synthesizeSpeech("いらっしゃいませ!");
+
+        assertThat(second.aiMessage().getId()).isEqualTo(first.aiMessage().getId());
+        assertThat(second.aiMessage().getContent()).isEqualTo(first.aiMessage().getContent());
+        assertThat(second.aiKoreanSubtitle()).isEqualTo("어서 오세요! (재번역)");
+
+        List<SpeakingMessage> messages = speakingMessageRepository.findBySession_IdOrderBySequenceNoAsc(session.sessionId());
+        assertThat(messages).hasSize(1);
+    }
+
+    @Test
+    void openConversation_rejectsOtherUsersSession() {
+        Long ownerId = createLearner("conv-opening-3-owner@example.com");
+        Long otherId = createLearner("conv-opening-3-other@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                ownerId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+
+        assertThrows(SpeakingSessionAccessDeniedException.class,
+                () -> conversationService.openConversation(session.sessionId(), otherId));
+        verifyNoInteractions(conversationAiService);
+    }
+
+    @Test
+    void openConversation_throwsWhenSessionNotFound() {
+        Long userId = createLearner("conv-opening-4@example.com");
+
+        assertThrows(SpeakingSessionNotFoundException.class,
+                () -> conversationService.openConversation(999_999_999L, userId));
+    }
+
+    @Test
+    void openConversation_rejectsCompletedSession() {
+        Long userId = createLearner("conv-opening-5@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+        conversationService.completeConversation(session.sessionId(), userId);
+
+        assertThrows(SpeakingSessionNotInProgressException.class,
+                () -> conversationService.openConversation(session.sessionId(), userId));
+    }
+
+    @Test
+    void openConversation_rejectsAbortedSession() {
+        Long userId = createLearner("conv-opening-6@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+        conversationService.abortConversation(session.sessionId(), userId);
+
+        assertThrows(SpeakingSessionNotInProgressException.class,
+                () -> conversationService.openConversation(session.sessionId(), userId));
+    }
+
+    // 7. opening 호출 전에 USER 발화가 먼저 sequenceNo=1로 저장된 경우, opening 생성을 거부한다.
+    @Test
+    void openConversation_rejectsWhenFirstMessageIsAlreadyFromUser() {
+        Long userId = createLearner("conv-opening-7@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
+        );
+
+        SpeakingMessage userMessage = conversationService.recordUserMessage(session.sessionId(), userId, "すみません");
+
+        assertThrows(ConversationOpeningNotAllowedException.class,
+                () -> conversationService.openConversation(session.sessionId(), userId));
+
+        verifyNoInteractions(conversationAiService);
+
+        List<SpeakingMessage> messages = speakingMessageRepository.findBySession_IdOrderBySequenceNoAsc(session.sessionId());
+        assertThat(messages).hasSize(1);
+        assertThat(messages.get(0).getId()).isEqualTo(userMessage.getId());
+        assertThat(messages.get(0).getSpeaker()).isEqualTo(Speaker.USER);
+        assertThat(messages.get(0).getSequenceNo()).isEqualTo(1);
     }
 }

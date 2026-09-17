@@ -13,6 +13,7 @@ import com.aijapanese.speaking.conversation.entity.ConversationFeedback;
 import com.aijapanese.speaking.conversation.entity.ConversationSetting;
 import com.aijapanese.speaking.conversation.entity.GenerationStatus;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
+import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
 import com.aijapanese.speaking.conversation.repository.ConversationCorrectionRepository;
 import com.aijapanese.speaking.conversation.repository.ConversationFeedbackRepository;
 import com.aijapanese.speaking.conversation.repository.ConversationSettingRepository;
@@ -38,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -135,6 +137,46 @@ public class ConversationService {
         SpeakingMessage aiMessage = appendMessage(session, Speaker.AI, reply.japaneseText());
 
         return new TurnResult(userMessage, aiMessage, reply.koreanTranslation());
+    }
+
+    /**
+     * 일반 회화 세션의 AI 선(先)발화(opening)를 반환한다.
+     * 이 세션에 opening이 아직 없다면(=세션에 메시지가 하나도 없다면) 새로 생성해 저장하고,
+     * 이미 있다면(=첫 메시지가 AI 발화라면) LLM으로 새 opening을 만들지 않고 기존 opening 텍스트를
+     * 재사용해 TTS/자막만 다시 구성한다.
+     * 세션에 메시지가 있지만 첫 메시지가 USER 발화라면(= opening보다 먼저 일반 turn이 저장된 경우)
+     * opening을 뒤늦게 끼워 넣으면 transcript 순서가 어긋나므로, 새 opening을 생성/저장하지 않고
+     * 예외로 요청을 거부한다.
+     * loadOwnedInProgressSession의 비관적 락 덕분에 동일 세션에 대한 동시 호출도 순차적으로 처리되어
+     * opening 메시지가 중복 저장되지 않는다.
+     */
+    @Transactional
+    public OpeningResult openConversation(Long sessionId, Long userId) {
+        SpeakingSession session = loadOwnedInProgressSession(sessionId, userId);
+
+        ConversationSetting setting = conversationSettingRepository.findBySession_Id(sessionId)
+                .orElseThrow(() -> new IllegalStateException("일반 회화 설정을 찾을 수 없습니다."));
+
+        Optional<SpeakingMessage> firstMessage = speakingMessageRepository
+                .findFirstBySession_IdOrderBySequenceNoAsc(sessionId);
+
+        SpeakingMessage openingMessage;
+        String aiKoreanSubtitle;
+        if (firstMessage.isEmpty()) {
+            ConversationAiReply reply = conversationAiService.generateOpeningReply(setting);
+            openingMessage = appendMessage(session, Speaker.AI, reply.japaneseText());
+            aiKoreanSubtitle = reply.koreanTranslation();
+        } else if (firstMessage.get().getSpeaker() == Speaker.AI) {
+            openingMessage = firstMessage.get();
+            aiKoreanSubtitle = conversationAiService.translateToKorean(openingMessage.getContent());
+        } else {
+            throw new ConversationOpeningNotAllowedException(
+                    "이미 사용자 발화가 시작된 세션에는 opening을 생성할 수 없습니다.");
+        }
+
+        byte[] aiAudio = conversationAiService.synthesizeSpeech(openingMessage.getContent());
+
+        return new OpeningResult(openingMessage, aiKoreanSubtitle, aiAudio);
     }
 
     /**
@@ -341,6 +383,13 @@ public class ConversationService {
 
     public record AudioTurnResult(
             SpeakingMessage userMessage,
+            SpeakingMessage aiMessage,
+            String aiKoreanSubtitle,
+            byte[] aiAudio
+    ) {
+    }
+
+    public record OpeningResult(
             SpeakingMessage aiMessage,
             String aiKoreanSubtitle,
             byte[] aiAudio

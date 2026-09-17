@@ -22,6 +22,11 @@ export function submitAudioTurn(sessionId, audioBlob, fileName) {
   return apiFetchFormData(`/api/conversations/${sessionId}/turns/audio`, formData)
 }
 
+// POST /api/conversations/{sessionId}/opening — AI 선(先)발화 요청 (이미 있으면 기존 opening 재사용)
+export function requestConversationOpening(sessionId) {
+  return apiFetch(`/api/conversations/${sessionId}/opening`, { method: 'POST' })
+}
+
 // POST /api/conversations/{sessionId}/complete — 정상 종료 및 Feedback 생성
 export function completeConversation(sessionId) {
   return apiFetch(`/api/conversations/${sessionId}/complete`, { method: 'POST' })

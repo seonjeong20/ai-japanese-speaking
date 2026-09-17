@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import VoiceOrb from '../../components/speaking/VoiceOrb'
@@ -8,7 +8,12 @@ import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
 import { useAudioRecorder } from '../../components/speaking/useAudioRecorder'
 import { BackArrowIcon, EndCallIcon, MicIcon } from '../../components/icons/DashboardIcons'
 import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
-import { abortConversation, completeConversation, submitAudioTurn } from '../../api/conversations'
+import {
+  abortConversation,
+  completeConversation,
+  requestConversationOpening,
+  submitAudioTurn,
+} from '../../api/conversations'
 import '../../components/setup/SetupForm.css'
 import '../../components/speaking/SpeakingSession.css'
 import './ConversationSpeakingPage.css'
@@ -58,6 +63,11 @@ function ConversationSpeakingPage() {
 
   const audioPlaybackRef = useRef(null)
   const conversationScrollRef = useRef(null)
+  // opening 요청을 이미 시작했는지 표시하는 가드입니다. 같은 컴포넌트 생명주기 안에서(예: StrictMode의
+  // effect 재실행) 불필요하게 opening API를 다시 호출하지 않기 위한 것으로, 새로고침이나 페이지 재진입까지
+  // 막지는 못합니다. 동일 sessionId로 opening이 여러 번 호출되어도 메시지가 중복 저장되지 않는 것은
+  // 서버(opening API의 멱등성)가 보장합니다.
+  const openingRequestedRef = useRef(false)
 
   // Setup을 거치지 않고 URL로 직접 들어오는 등 실제 세션 정보가 없으면
   // 대화를 진행할 수 없으므로 설정 화면으로 되돌려보냅니다.
@@ -111,19 +121,49 @@ function ConversationSpeakingPage() {
     }
   }
 
-  const playAiAudio = (base64Audio, mimeType) => {
-    if (!base64Audio) {
-      setStatus('idle')
-      return
+  const playAiAudio = useCallback(
+    (base64Audio, mimeType) => {
+      if (!base64Audio) {
+        setStatus('idle')
+        return
+      }
+      setStatus('speaking')
+      const audio = new Audio(`data:${mimeType || 'audio/mpeg'};base64,${base64Audio}`)
+      audioPlaybackRef.current = audio
+      const finish = () => setStatus('idle')
+      audio.onended = finish
+      audio.onerror = finish
+      audio.play().catch(finish)
+    },
+    [setStatus],
+  )
+
+  // 진입 시 AI가 먼저 말을 거는 opening을 한 번 요청합니다. sessionId가 아직 없으면(위 가드에서
+  // 곧 설정 화면으로 되돌아감) 요청하지 않고, openingRequestedRef로 같은 컴포넌트 생명주기 안에서
+  // 중복 요청되지 않도록 합니다.
+  useEffect(() => {
+    if (!sessionId || openingRequestedRef.current) return
+    openingRequestedRef.current = true
+
+    const requestOpening = async () => {
+      setStatus('thinking')
+      try {
+        const result = await requestConversationOpening(sessionId)
+
+        setTurns((prev) => [
+          ...prev,
+          { speaker: 'ai', jp: result.aiMessage.content, kr: result.aiMessageKoreanSubtitle },
+        ])
+
+        playAiAudio(result.aiAudioBase64, result.aiAudioMimeType)
+      } catch {
+        setErrorMessage('AI가 먼저 말을 걸지 못했어요. 마이크를 눌러 먼저 말해보세요.')
+        setStatus('idle')
+      }
     }
-    setStatus('speaking')
-    const audio = new Audio(`data:${mimeType || 'audio/mpeg'};base64,${base64Audio}`)
-    audioPlaybackRef.current = audio
-    const finish = () => setStatus('idle')
-    audio.onended = finish
-    audio.onerror = finish
-    audio.play().catch(finish)
-  }
+
+    requestOpening()
+  }, [sessionId, setStatus, playAiAudio])
 
   const { start: startRecording, stop: stopRecording } = useAudioRecorder({
     onComplete: submitTurn,
