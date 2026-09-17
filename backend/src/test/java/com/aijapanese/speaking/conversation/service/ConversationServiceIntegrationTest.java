@@ -12,6 +12,7 @@ import com.aijapanese.speaking.conversation.entity.Difficulty;
 import com.aijapanese.speaking.conversation.entity.GenerationStatus;
 import com.aijapanese.speaking.conversation.entity.SubtitleMode;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
+import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
 import com.aijapanese.speaking.organization.entity.Organization;
 import com.aijapanese.speaking.organization.entity.OrganizationStatus;
 import com.aijapanese.speaking.organization.repository.OrganizationRepository;
@@ -445,5 +446,27 @@ class ConversationServiceIntegrationTest {
 
         assertThrows(SpeakingSessionNotInProgressException.class,
                 () -> conversationService.openConversation(session.sessionId(), userId));
+    }
+
+    // 7. opening 호출 전에 USER 발화가 먼저 sequenceNo=1로 저장된 경우, opening 생성을 거부한다.
+    @Test
+    void openConversation_rejectsWhenFirstMessageIsAlreadyFromUser() {
+        Long userId = createLearner("conv-opening-7@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
+        );
+
+        SpeakingMessage userMessage = conversationService.recordUserMessage(session.sessionId(), userId, "すみません");
+
+        assertThrows(ConversationOpeningNotAllowedException.class,
+                () -> conversationService.openConversation(session.sessionId(), userId));
+
+        verifyNoInteractions(conversationAiService);
+
+        List<SpeakingMessage> messages = speakingMessageRepository.findBySession_IdOrderBySequenceNoAsc(session.sessionId());
+        assertThat(messages).hasSize(1);
+        assertThat(messages.get(0).getId()).isEqualTo(userMessage.getId());
+        assertThat(messages.get(0).getSpeaker()).isEqualTo(Speaker.USER);
+        assertThat(messages.get(0).getSequenceNo()).isEqualTo(1);
     }
 }

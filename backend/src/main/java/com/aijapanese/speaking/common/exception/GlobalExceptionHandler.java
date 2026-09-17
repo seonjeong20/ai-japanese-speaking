@@ -7,6 +7,7 @@ import com.aijapanese.speaking.auth.exception.OrganizationNotAvailableException;
 import com.aijapanese.speaking.ai.AiServiceException;
 import com.aijapanese.speaking.common.dto.ErrorResponse;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
+import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
 import com.aijapanese.speaking.interview.exception.InterviewAnswerConflictException;
 import com.aijapanese.speaking.interview.exception.InterviewFeedbackNotFoundException;
 import com.aijapanese.speaking.interview.exception.InterviewQuestionNotFoundException;
@@ -103,6 +104,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConversationFeedbackNotFound(ConversationFeedbackNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("FEEDBACK_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConversationOpeningNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleConversationOpeningNotAllowed(ConversationOpeningNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("CONVERSATION_OPENING_NOT_ALLOWED", ex.getMessage()));
     }
 
     @ExceptionHandler(InterviewQuestionNotFoundException.class)
