@@ -5,6 +5,7 @@ import VoiceOrb from '../../components/speaking/VoiceOrb'
 import SessionEndModal from '../../components/speaking/SessionEndModal'
 import { useSpeakingStatus } from '../../components/speaking/useSpeakingStatus'
 import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
+import { useAudioRecorder } from '../../components/speaking/useAudioRecorder'
 import { BackArrowIcon, EndCallIcon, MicIcon } from '../../components/icons/DashboardIcons'
 import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
 import { abortConversation, completeConversation, submitAudioTurn } from '../../api/conversations'
@@ -21,13 +22,6 @@ const DEFAULT_SETTINGS = {
   description: '',
   difficulty: Difficulty.INTERMEDIATE,
   subtitleMode: SubtitleMode.JAPANESE,
-}
-
-const RECORDER_MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
-
-function pickRecorderMimeType() {
-  if (typeof MediaRecorder === 'undefined') return ''
-  return RECORDER_MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type)) || ''
 }
 
 function pickParticle(word, withBatchim, withoutBatchim) {
@@ -62,13 +56,8 @@ function ConversationSpeakingPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [turns, setTurns] = useState([])
 
-  const mediaRecorderRef = useRef(null)
-  const audioChunksRef = useRef([])
-  const streamRef = useRef(null)
   const audioPlaybackRef = useRef(null)
   const conversationScrollRef = useRef(null)
-  // onerror 이후에도 스펙상 onstop이 뒤따라 호출되므로, 그 때 깨진 오디오를 제출하지 않도록 막는 플래그입니다.
-  const recordingFailedRef = useRef(false)
 
   // Setup을 거치지 않고 URL로 직접 들어오는 등 실제 세션 정보가 없으면
   // 대화를 진행할 수 없으므로 설정 화면으로 되돌려보냅니다.
@@ -80,7 +69,6 @@ function ConversationSpeakingPage() {
 
   useEffect(() => {
     return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop())
       audioPlaybackRef.current?.pause()
     }
   }, [])
@@ -103,69 +91,6 @@ function ConversationSpeakingPage() {
       abortConversation(sessionId).catch(() => {})
     }
     navigate('/conversation/setup')
-  }
-
-  const startRecording = async () => {
-    setErrorMessage('')
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
-
-      const mimeType = pickRecorderMimeType()
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
-      audioChunksRef.current = []
-      recordingFailedRef.current = false
-
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
-      }
-
-      // 권한 거부 이후의 오류입니다: 녹음 도중 장치 연결 해제 등으로 MediaRecorder 자체가
-      // 실패하는 경우를 처리합니다. 스펙상 error 이후 stop도 뒤따라 호출되므로, 그 때 깨진
-      // 오디오가 제출되지 않도록 recordingFailedRef로 막습니다.
-      recorder.onerror = (event) => {
-        console.error('MediaRecorder error', event.error ?? event)
-        recordingFailedRef.current = true
-        streamRef.current?.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-        setErrorMessage('녹음 중 문제가 발생했습니다. 다시 시도해주세요.')
-        setStatus('idle')
-      }
-
-      recorder.onstop = () => {
-        streamRef.current?.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-        if (recordingFailedRef.current) {
-          recordingFailedRef.current = false
-          return
-        }
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
-        submitTurn(blob)
-      }
-
-      mediaRecorderRef.current = recorder
-      recorder.start()
-      setStatus('listening')
-    } catch {
-      setErrorMessage('마이크 권한이 필요합니다. 브라우저 설정에서 마이크 접근을 허용해주세요.')
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop()
-    }
-  }
-
-  const handleMicClick = () => {
-    if (status === 'idle') {
-      startRecording()
-    } else if (status === 'listening') {
-      stopRecording()
-    }
-    // thinking/speaking 중에는 클릭을 무시해 동일 turn이 중복 요청되지 않도록 합니다.
   }
 
   const submitTurn = async (audioBlob) => {
@@ -198,6 +123,25 @@ function ConversationSpeakingPage() {
     audio.onended = finish
     audio.onerror = finish
     audio.play().catch(finish)
+  }
+
+  const { start: startRecording, stop: stopRecording } = useAudioRecorder({
+    onComplete: submitTurn,
+    onError: (message) => {
+      setErrorMessage(message)
+      setStatus('idle')
+    },
+  })
+
+  const handleMicClick = async () => {
+    if (status === 'idle') {
+      setErrorMessage('')
+      const started = await startRecording()
+      if (started) setStatus('listening')
+    } else if (status === 'listening') {
+      stopRecording()
+    }
+    // thinking/speaking 중에는 클릭을 무시해 동일 turn이 중복 요청되지 않도록 합니다.
   }
 
   const handleEndClick = () => {
