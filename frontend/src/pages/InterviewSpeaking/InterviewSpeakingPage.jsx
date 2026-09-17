@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import VoiceOrb from '../../components/speaking/VoiceOrb'
 import SessionEndModal from '../../components/speaking/SessionEndModal'
 import { useSpeakingStatus } from '../../components/speaking/useSpeakingStatus'
 import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
+import { useAudioRecorder } from '../../components/speaking/useAudioRecorder'
 import { BackArrowIcon, CheckIcon, JobIcon } from '../../components/icons/DashboardIcons'
 import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
 import { abortInterview, completeInterview, submitInterviewAudioAnswer } from '../../api/interviews'
@@ -18,13 +19,6 @@ const DEFAULT_SETTINGS = {
   difficulty: Difficulty.INTERMEDIATE,
   additionalRequest: '',
   subtitleMode: SubtitleMode.JAPANESE,
-}
-
-const RECORDER_MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
-
-function pickRecorderMimeType() {
-  if (typeof MediaRecorder === 'undefined') return ''
-  return RECORDER_MIME_CANDIDATES.find((type) => MediaRecorder.isTypeSupported(type)) || ''
 }
 
 function InterviewSpeakingPage() {
@@ -44,10 +38,6 @@ function InterviewSpeakingPage() {
   const [answerResult, setAnswerResult] = useState(null)
   const [currentQuestion, setCurrentQuestion] = useState(firstQuestion)
   const [isCompleting, setCompleting] = useState(false)
-  const mediaRecorderRef = useRef(null)
-  const audioChunksRef = useRef([])
-  const streamRef = useRef(null)
-  const recordingFailedRef = useRef(false)
 
   useEffect(() => {
     if (!sessionId || !firstQuestion?.questionId) {
@@ -55,55 +45,8 @@ function InterviewSpeakingPage() {
     }
   }, [sessionId, firstQuestion, navigate])
 
-  useEffect(() => {
-    return () => streamRef.current?.getTracks().forEach((track) => track.stop())
-  }, [])
-
   const sessionTitle = `${settings.job} 면접 연습`
   const sessionMeta = `면접 회화 · ${settings.interviewType} · ${DifficultyLabel[settings.difficulty]}`
-
-  const startRecording = async () => {
-    setErrorMessage('')
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
-      const mimeType = pickRecorderMimeType()
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
-      audioChunksRef.current = []
-      recordingFailedRef.current = false
-
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) audioChunksRef.current.push(event.data)
-      }
-      recorder.onerror = () => {
-        recordingFailedRef.current = true
-        streamRef.current?.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-        setErrorMessage('녹음 중 문제가 발생했습니다. 다시 시도해주세요.')
-        setStatus('idle')
-      }
-      recorder.onstop = () => {
-        streamRef.current?.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-        if (recordingFailedRef.current) {
-          recordingFailedRef.current = false
-          return
-        }
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
-        submitAnswer(blob)
-      }
-
-      mediaRecorderRef.current = recorder
-      recorder.start()
-      setStatus('listening')
-    } catch {
-      setErrorMessage('마이크 권한이 필요합니다. 브라우저 설정에서 마이크 접근을 허용해주세요.')
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop()
-  }
 
   const submitAnswer = async (audioBlob) => {
     setStatus('thinking')
@@ -120,6 +63,20 @@ function InterviewSpeakingPage() {
       setErrorMessage(error.message || '답변 평가에 실패했습니다. 다시 시도해주세요.')
       setStatus('idle')
     }
+  }
+
+  const { start: startAudioRecording, stop: stopRecording } = useAudioRecorder({
+    onComplete: submitAnswer,
+    onError: (message) => {
+      setErrorMessage(message)
+      setStatus('idle')
+    },
+  })
+
+  const startRecording = async () => {
+    setErrorMessage('')
+    const started = await startAudioRecording()
+    if (started) setStatus('listening')
   }
 
   const handleBackClick = () => setEndModalOpen(true)
