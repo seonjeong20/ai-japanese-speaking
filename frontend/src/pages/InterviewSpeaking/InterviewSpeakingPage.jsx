@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import VoiceOrb from '../../components/speaking/VoiceOrb'
 import SessionEndModal from '../../components/speaking/SessionEndModal'
+import SpeakingHeader from '../../components/speaking/SpeakingHeader'
 import { useSpeakingStatus } from '../../components/speaking/useSpeakingStatus'
 import { useElapsedTimer } from '../../components/speaking/useElapsedTimer'
 import { useAudioRecorder } from '../../components/speaking/useAudioRecorder'
-import { BackArrowIcon, CheckIcon, JobIcon } from '../../components/icons/DashboardIcons'
+import { CheckIcon, JobIcon } from '../../components/icons/DashboardIcons'
 import { Difficulty, DifficultyLabel, SubtitleMode } from '../../data/enums'
 import { abortInterview, completeInterview, submitInterviewAudioAnswer } from '../../api/interviews'
 import '../../components/setup/SetupForm.css'
@@ -115,21 +116,13 @@ function InterviewSpeakingPage() {
   return (
     <LearnerLayout>
       <div className="speaking-page interview-speaking-page">
-        <div className="speaking-header">
-          <div className="speaking-header__back-row">
-            <button type="button" className="setup-page__back" onClick={handleBackClick} aria-label="면접 종료하기">
-              <BackArrowIcon size={18} />
-            </button>
-            <div className="speaking-header__title-block">
-              <p className="speaking-header__title">{sessionTitle}</p>
-              <p className="speaking-header__meta">{sessionMeta}</p>
-            </div>
-          </div>
-          <div className="speaking-timer">
-            <span className="speaking-timer__dot" />
-            <span className="speaking-timer__time">{elapsed}</span>
-          </div>
-        </div>
+        <SpeakingHeader
+          title={sessionTitle}
+          meta={sessionMeta}
+          elapsed={elapsed}
+          onBack={handleBackClick}
+          backLabel="면접 종료하기"
+        />
 
         <div className="interview-progress-row">
           <p className="interview-progress-row__label">질문 {currentQuestion?.sequenceNo ?? 1} / 최대 10</p>
