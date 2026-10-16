@@ -66,7 +66,11 @@ function InterviewSpeakingPage() {
     }
   }
 
-  const { start: startAudioRecording, stop: stopRecording } = useAudioRecorder({
+  const {
+    start: startAudioRecording,
+    stop: stopRecording,
+    cancel: cancelRecording,
+  } = useAudioRecorder({
     onComplete: submitAnswer,
     onError: (message) => {
       setErrorMessage(message)
@@ -85,6 +89,8 @@ function InterviewSpeakingPage() {
   // 면접을 마무리하지 않고 나가는 경우입니다. 세션이 IN_PROGRESS로 방치되지 않도록
   // 서버에 중도 종료를 알리되, 이동 자체를 막을 정도의 오류는 아니므로 결과를 기다리지 않습니다.
   const handleExitInterview = () => {
+    // 면접 종료는 답변 완료가 아니므로, 진행 중인 녹음을 제출하지 않고 취소합니다.
+    cancelRecording()
     if (sessionId) {
       abortInterview(sessionId).catch(() => {})
     }
