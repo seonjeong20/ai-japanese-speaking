@@ -166,7 +166,11 @@ function ConversationSpeakingPage() {
     requestOpening()
   }, [sessionId, setStatus, playAiAudio])
 
-  const { start: startRecording, stop: stopRecording } = useAudioRecorder({
+  const {
+    start: startRecording,
+    stop: stopRecording,
+    cancel: cancelRecording,
+  } = useAudioRecorder({
     onComplete: submitTurn,
     onError: (message) => {
       setErrorMessage(message)
@@ -195,7 +199,10 @@ function ConversationSpeakingPage() {
     if (isEnding) return
     setEnding(true)
     setEndModalOpen(false)
-    stopRecording()
+    // 대화 종료는 녹음 완료가 아니므로, 진행 중인 녹음을 제출하지 않고 취소합니다.
+    // completeConversation이 실패해도 listening/speaking 상태에 남지 않도록 idle로 되돌립니다.
+    cancelRecording()
+    setStatus('idle')
     audioPlaybackRef.current?.pause()
 
     try {
