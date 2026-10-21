@@ -217,10 +217,6 @@ public class ConversationService {
     public SessionCompletionResponse abortConversation(Long sessionId, Long userId) {
         SpeakingSession session = loadOwnedInProgressSession(sessionId, userId);
 
-        if (session.getSessionType() != SessionType.CONVERSATION) {
-            throw new SpeakingSessionNotFoundException("세션을 찾을 수 없습니다.");
-        }
-
         session.abort(LocalDateTime.now());
 
         return new SessionCompletionResponse(
@@ -355,6 +351,10 @@ public class ConversationService {
             throw new SpeakingSessionAccessDeniedException("본인의 세션만 접근할 수 있습니다.");
         }
 
+        if (session.getSessionType() != SessionType.CONVERSATION) {
+            throw new SpeakingSessionNotFoundException("세션을 찾을 수 없습니다.");
+        }
+
         return session;
     }
 
@@ -369,6 +369,10 @@ public class ConversationService {
 
         if (!session.getUser().getId().equals(userId)) {
             throw new SpeakingSessionAccessDeniedException("본인의 세션만 접근할 수 있습니다.");
+        }
+
+        if (session.getSessionType() != SessionType.CONVERSATION) {
+            throw new SpeakingSessionNotFoundException("세션을 찾을 수 없습니다.");
         }
 
         if (session.getStatus() != SessionStatus.IN_PROGRESS) {
