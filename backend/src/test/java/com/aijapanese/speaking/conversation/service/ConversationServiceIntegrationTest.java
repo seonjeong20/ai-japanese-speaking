@@ -1,5 +1,6 @@
 package com.aijapanese.speaking.conversation.service;
 
+import com.aijapanese.speaking.auth.security.JwtTokenProvider;
 import com.aijapanese.speaking.conversation.ai.ConversationAiReply;
 import com.aijapanese.speaking.conversation.ai.ConversationAiService;
 import com.aijapanese.speaking.conversation.ai.ConversationFeedbackAiResult;
@@ -13,6 +14,7 @@ import com.aijapanese.speaking.conversation.entity.GenerationStatus;
 import com.aijapanese.speaking.conversation.entity.SubtitleMode;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
 import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
+import com.aijapanese.speaking.conversation.repository.ConversationFeedbackRepository;
 import com.aijapanese.speaking.organization.entity.Organization;
 import com.aijapanese.speaking.organization.entity.OrganizationStatus;
 import com.aijapanese.speaking.organization.repository.OrganizationRepository;
@@ -31,11 +33,19 @@ import com.aijapanese.speaking.user.entity.User;
 import com.aijapanese.speaking.user.entity.UserRole;
 import com.aijapanese.speaking.user.entity.UserStatus;
 import com.aijapanese.speaking.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -49,12 +59,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * ConversationAiService/ConversationFeedbackAiService는 항상 @MockitoBean으로 대체한다.
  * 이 테스트는 실제 OpenAI API를 절대 호출하지 않는다 (AiClient까지 내려가지 않음).
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @Transactional
 class ConversationServiceIntegrationTest {
 
@@ -72,6 +88,18 @@ class ConversationServiceIntegrationTest {
 
     @Autowired
     private SpeakingMessageRepository speakingMessageRepository;
+
+    @Autowired
+    private ConversationFeedbackRepository conversationFeedbackRepository;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @MockitoBean
     private ConversationAiService conversationAiService;
@@ -178,6 +206,81 @@ class ConversationServiceIntegrationTest {
         assertThat(completed.durationSeconds()).isGreaterThanOrEqualTo(0);
         assertThat(completed.feedbackGenerationStatus()).isEqualTo(GenerationStatus.FAILED);
         org.mockito.Mockito.verifyNoInteractions(conversationFeedbackAiService);
+    }
+
+    @Test
+    void completeConversationApi_completesConversationSession() throws Exception {
+        Long userId = createLearner("conv-complete-api@example.com");
+        SpeakingSessionResponse session = conversationService.startConversation(
+                userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
+        );
+
+        mockMvc.perform(post("/api/conversations/{sessionId}/complete", session.sessionId())
+                        .header("Authorization", "Bearer " + jwtTokenProvider.generateToken(userId, UserRole.LEARNER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").value(session.sessionId()))
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        entityManager.flush();
+        entityManager.clear();
+        SpeakingSession completed = speakingSessionRepository.findById(session.sessionId()).orElseThrow();
+        assertThat(completed.getStatus()).isEqualTo(SessionStatus.COMPLETED);
+        assertThat(completed.getEndedAt()).isNotNull();
+        assertThat(completed.getDurationSeconds()).isGreaterThanOrEqualTo(0);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"complete", "abort", "opening", "turns", "turns/audio", "feedback"})
+    void conversationApis_rejectInterviewSessionWithoutChangingData(String endpoint) throws Exception {
+        Long userId = createLearner("conv-wrong-type@example.com");
+        LocalDateTime startedAt = LocalDateTime.now().withNano(0);
+        SpeakingSession interview = speakingSessionRepository.save(new SpeakingSession(
+                userRepository.getReferenceById(userId), SessionType.INTERVIEW,
+                SessionStatus.IN_PROGRESS, startedAt, startedAt
+        ));
+        SpeakingMessage question = speakingMessageRepository.save(new SpeakingMessage(
+                interview, 1, Speaker.AI, "QUESTION", "自己紹介をお願いします。", startedAt
+        ));
+        Long sessionId = interview.getId();
+        Long messageId = question.getId();
+        entityManager.flush();
+        entityManager.clear();
+
+        String path = "/api/conversations/" + sessionId + "/" + endpoint;
+        MockHttpServletRequestBuilder request = switch (endpoint) {
+            case "feedback" -> get(path);
+            case "turns" -> post(path).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"userMessage\":\"こんにちは\"}");
+            case "turns/audio" -> multipart(path).file(new MockMultipartFile(
+                    "audio", "turn.webm", "audio/webm", new byte[]{1, 2, 3}
+            ));
+            default -> post(path);
+        };
+
+        mockMvc.perform(request.header(
+                        "Authorization", "Bearer " + jwtTokenProvider.generateToken(userId, UserRole.LEARNER)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SESSION_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("세션을 찾을 수 없습니다."));
+
+        // DB를 다시 읽어 종료 시각/상태, 기존 발화, 피드백이 변경되지 않았는지 확인한다.
+        entityManager.flush();
+        entityManager.clear();
+        SpeakingSession unchanged = speakingSessionRepository.findById(sessionId).orElseThrow();
+        assertThat(unchanged.getSessionType()).isEqualTo(SessionType.INTERVIEW);
+        assertThat(unchanged.getStatus()).isEqualTo(SessionStatus.IN_PROGRESS);
+        assertThat(unchanged.getStartedAt()).isEqualTo(startedAt);
+        assertThat(unchanged.getEndedAt()).isNull();
+        assertThat(unchanged.getDurationSeconds()).isNull();
+        List<SpeakingMessage> messages = speakingMessageRepository.findBySession_IdOrderBySequenceNoAsc(sessionId);
+        assertThat(messages).hasSize(1);
+        assertThat(messages.get(0).getId()).isEqualTo(messageId);
+        assertThat(messages.get(0).getContent()).isEqualTo("自己紹介をお願いします。");
+        assertThat(messages.get(0).getSpeaker()).isEqualTo(Speaker.AI);
+        assertThat(messages.get(0).getMessageType()).isEqualTo("QUESTION");
+        assertThat(messages.get(0).getSequenceNo()).isEqualTo(1);
+        assertThat(conversationFeedbackRepository.findBySession_Id(sessionId)).isEmpty();
+        verifyNoInteractions(conversationAiService, conversationFeedbackAiService);
     }
 
     @Test
