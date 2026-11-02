@@ -1,7 +1,7 @@
 # AI 일본어 Speaking 서비스: 설계 복습 노트
 
 기준일: 2026-09-09  
-근거: [웹 프로젝트 기획](chatgpt-conversation://6a99632e-1628-83ee-a66d-e376c3dc74ff)의 최신 합의 및 14개 테이블 ERD. 정확한 컬럼·엔드포인트는 [ERD + API 기준 문서](ai-japanese-speaking-erd-api-spec.md)를 함께 본다.
+근거: [웹 프로젝트 기획](chatgpt-conversation://6a99632e-1628-83ee-a66d-e376c3dc74ff)의 최신 합의 및 14개 테이블 ERD. 정확한 컬럼·엔드포인트는 [ERD + API 기준 문서](../contracts/erd-api-spec.md)를 함께 본다.
 
 이 문서는 “왜 이렇게 나눴는가”를 이해하기 위한 해설이다. 예시 데이터는 학습용이며 새 기능이나 정책을 추가하지 않는다. 구현 때 검토할 내용은 확정사항과 구분했다.
 

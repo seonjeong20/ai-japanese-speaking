@@ -2,13 +2,13 @@
 
 기준일: 2026-09-09
 
-[`architecture.md`](architecture.md)가 "백엔드를 어떤 구조로 설계하는가"를 정의한다면, 이 문서는 "실제 Spring Boot 코드를 작성할 때 어떤 구현 규칙을 지켜야 하는가"를 정의한다. Claude/Codex 등 Coding Agent가 백엔드를 구현할 때 반드시 참고하는 구현 규칙이다.
+[`architecture.md`](../architecture/architecture.md)가 "백엔드를 어떤 구조로 설계하는가"를 정의한다면, 이 문서는 "실제 Spring Boot 코드를 작성할 때 어떤 구현 규칙을 지켜야 하는가"를 정의한다. Claude/Codex 등 Coding Agent가 백엔드를 구현할 때 반드시 참고하는 구현 규칙이다.
 
 계약 기준 문서:
 
-- 아키텍처 결정: [`architecture.md`](architecture.md)
-- ERD/API 기준: [`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md)
-- OpenAPI 명세: [`ai-japanese-speaking-openapi.yml`](ai-japanese-speaking-openapi.yml)
+- 아키텍처 결정: [`architecture.md`](../architecture/architecture.md)
+- ERD/API 기준: [`erd-api-spec.md`](../contracts/erd-api-spec.md)
+- OpenAPI 명세: [`openapi.yml`](../contracts/openapi.yml)
 
 이 문서는 위 문서의 결정을 구현 규칙으로 구체화할 뿐, 새로운 아키텍처/보안/DB/API 정책을 확정하지 않는다. 이 문서와 위 문서가 충돌하면 위 문서가 우선하며, 그런 충돌을 발견하면 Coding Agent는 임의로 고치지 않고 보고한다.
 
@@ -58,7 +58,7 @@
 - `@OneToMany`를 편의 목적으로 무조건 추가하지 않는다.
 - 실제 ERD 관계와 맞지 않는 JPA 관계를 만들지 않는다.
 
-구체적인 도메인 간 의존성 규칙([`architecture.md`](architecture.md) 2장 참고)은 아직 확정하지 않았으므로 이 문서에서 임의로 추가하지 않는다.
+구체적인 도메인 간 의존성 규칙([`architecture.md`](../architecture/architecture.md) 2장 참고)은 아직 확정하지 않았으므로 이 문서에서 임의로 추가하지 않는다.
 
 ---
 
@@ -192,7 +192,7 @@ Transaction 경계는 Service 계층을 기준으로 둔다.
 
 ## 10. API Contract Rules
 
-기존 OpenAPI YAML([`ai-japanese-speaking-openapi.yml`](ai-japanese-speaking-openapi.yml))이 API Contract의 기준이다.
+기존 OpenAPI YAML([`openapi.yml`](../contracts/openapi.yml))이 API Contract의 기준이다.
 
 Coding Agent는 임의로 다음을 변경하지 않는다: Endpoint, HTTP Method, Path parameter, Query parameter, Request Schema, Response Schema, Enum, HTTP Status 계약.
 
@@ -206,7 +206,7 @@ Coding Agent는 임의로 다음을 변경하지 않는다: Endpoint, HTTP Metho
 
 ## 11. Database Contract Rules
 
-기존 ERD([`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md), [`erd_v2.pdf`](erd_v2.pdf))가 Database Contract의 기준이다.
+기존 ERD([`erd-api-spec.md`](../contracts/erd-api-spec.md), [`erd_v2.pdf`](erd_v2.pdf))가 Database Contract의 기준이다.
 
 Coding Agent는 임의로 다음을 변경하지 않는다: Table 추가/삭제, Column 추가/삭제, Column 의미 변경, FK 변경, Unique Constraint 변경, Enum 의미 변경, Role/Status 데이터 정책 변경.
 
@@ -218,7 +218,7 @@ Coding Agent는 임의로 다음을 변경하지 않는다: Table 추가/삭제,
 
 ## 12. AI Implementation Boundary
 
-[`architecture.md`](architecture.md) 12장에 정의된 AI 구조를 따른다.
+[`architecture.md`](../architecture/architecture.md) 12장에 정의된 AI 구조를 따른다.
 
 ```text
 Business Service → Domain AI Service → Common AI Client → Spring AI → External LLM
@@ -235,7 +235,7 @@ Coding Agent가 AI 구현 단계 전에 임의로 모델이나 Agent 구조를 �
 
 ## 13. Speech Implementation Boundary
 
-STT/TTS는 LLM 책임과 분리한다([`architecture.md`](architecture.md) 14장 참고).
+STT/TTS는 LLM 책임과 분리한다([`architecture.md`](../architecture/architecture.md) 14장 참고).
 
 구체적인 STT/TTS Provider는 아직 결정하지 않았다. 따라서 현재 Coding Agent는:
 - 특정 Provider를 아키텍처 결정으로 확정하지 않는다.
