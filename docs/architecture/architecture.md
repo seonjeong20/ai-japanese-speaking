@@ -9,9 +9,9 @@
 
 이 문서는 새로운 기능 요구사항이나 API/DB 계약을 정의하지 않는다. 기능·데이터·API 계약의 기준은 아래 문서다.
 
-- ERD/API 기준: [`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md)
-- OpenAPI 명세: [`ai-japanese-speaking-openapi.yml`](ai-japanese-speaking-openapi.yml)
-- 설계 의도 해설: [`ai-japanese-speaking-design-study-notes.md`](ai-japanese-speaking-design-study-notes.md)
+- ERD/API 기준: [`erd-api-spec.md`](../contracts/erd-api-spec.md)
+- OpenAPI 명세: [`openapi.yml`](../contracts/openapi.yml)
+- 설계 의도 해설: [`design-study-notes.md`](../notes/design-study-notes.md)
 - ERD 원본: [`erd_v2.pdf`](erd_v2.pdf)
 
 이 문서와 위 문서가 충돌하면 위 문서(ERD/API/OpenAPI)가 우선한다. Coding Agent는 충돌을 발견하면 임의로 한쪽을 수정하지 않고 보고한다. (세부 규칙은 이후 `AGENTS.md`/`backend-rules.md`에서 정한다.)
@@ -122,7 +122,7 @@ Database
 [응답]  Entity → Response DTO → Controller → JSON → React
 ```
 
-**DTO 구조의 기준은 기존 OpenAPI 명세다.** [`ai-japanese-speaking-openapi.yml`](ai-japanese-speaking-openapi.yml)에 정의된 Request/Response schema와 실제 Java DTO가 일치하도록 구현한다. OpenAPI에 없는 필드를 DTO에 임의로 추가하지 않는다.
+**DTO 구조의 기준은 기존 OpenAPI 명세다.** [`openapi.yml`](../contracts/openapi.yml)에 정의된 Request/Response schema와 실제 Java DTO가 일치하도록 구현한다. OpenAPI에 없는 필드를 DTO에 임의로 추가하지 않는다.
 
 ## 6. Data Architecture
 
@@ -139,7 +139,7 @@ PostgreSQL Table
 
 **결정**: 기존 ERD를 Database Contract의 기준으로 사용한다. ERD에 없는 Entity/Table/Column을 구현 단계에서 임의로 추가하지 않는다.
 
-**왜**: ERD([`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md) 2장, [`erd_v2.pdf`](erd_v2.pdf))는 이미 여러 차례 논의를 거쳐 14개 테이블·관계·제약으로 확정된 계약이다. Coding Agent가 편의상 컬럼이나 테이블을 추가하면 ERD와 실제 스키마가 어긋나고, 이후 어느 쪽이 진실인지 알 수 없게 된다.
+**왜**: ERD([`erd-api-spec.md`](../contracts/erd-api-spec.md) 2장, [`erd_v2.pdf`](erd_v2.pdf))는 이미 여러 차례 논의를 거쳐 14개 테이블·관계·제약으로 확정된 계약이다. Coding Agent가 편의상 컬럼이나 테이블을 추가하면 ERD와 실제 스키마가 어긋나고, 이후 어느 쪽이 진실인지 알 수 없게 된다.
 
 초기 개발에서는 JPA/Hibernate의 schema 생성 기능(`ddl-auto` 등)을 활용할 수 있지만, 최종적으로는 ERD ↔ Entity ↔ 실제 PostgreSQL schema가 일치하는지 검증한다.
 
@@ -162,7 +162,7 @@ Conversation  Interview
 
 **왜**: 두 모드는 같은 "학습 세션"이라는 개념을 공유하지만 진행 방식(자유 대화 vs 질문-답변-평가), 피드백 구조(무점수 요약/교정 vs 점수 기반 rubric 평가), AI 처리 흐름이 근본적으로 다르다. 공통 부분만 `speaking_sessions`로 묶고 나머지는 각 도메인이 독립적으로 소유하는 편이 향후 한쪽만 변경할 때 다른 쪽에 영향을 주지 않는다.
 
-세부 컬럼·관계·상태 값은 [`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md) 2장, 3장을 따른다.
+세부 컬럼·관계·상태 값은 [`erd-api-spec.md`](../contracts/erd-api-spec.md) 2장, 3장을 따른다.
 
 ## 8. History: 전용 Entity/Table을 만들지 않는다
 
@@ -203,7 +203,7 @@ React → POST /api/auth/login → Spring Security → JWT 발급
 
 **결정**: 사용자 식별을 위해 프론트가 `userId`를 신뢰 기반으로 전달하지 않는다. 인증된 사용자의 ID/Role은 JWT/Security Context를 기준으로 사용한다.
 
-**왜**: 클라이언트가 보낸 `userId`를 그대로 신뢰하면 다른 사용자의 세션·데이터에 접근하는 권한 우회가 가능해진다. ([`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md) 1장에도 명시된 정책이다.)
+**왜**: 클라이언트가 보낸 `userId`를 그대로 신뢰하면 다른 사용자의 세션·데이터에 접근하는 권한 우회가 가능해진다. ([`erd-api-spec.md`](../contracts/erd-api-spec.md) 1장에도 명시된 정책이다.)
 
 Role: `LEARNER` / `MANAGER` / `ADMIN`
 
@@ -218,9 +218,9 @@ Role: `LEARNER` / `MANAGER` / `ADMIN`
 
 ## 11. API Contract: OpenAPI-first
 
-**결정**: 기존 OpenAPI YAML([`ai-japanese-speaking-openapi.yml`](ai-japanese-speaking-openapi.yml))을 API Contract의 기준으로 사용한다. API endpoint, Request/Response 구조, enum 등을 구현 과정에서 임의로 변경하지 않는다.
+**결정**: 기존 OpenAPI YAML([`openapi.yml`](../contracts/openapi.yml))을 API Contract의 기준으로 사용한다. API endpoint, Request/Response 구조, enum 등을 구현 과정에서 임의로 변경하지 않는다.
 
-**왜**: 프론트엔드가 이미 이 계약을 기준으로 화면을 구현했다([`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md) 9장 "프론트-ERD 대조" 참고). 백엔드가 임의로 계약을 바꾸면 프론트와 어긋난다.
+**왜**: 프론트엔드가 이미 이 계약을 기준으로 화면을 구현했다([`erd-api-spec.md`](../contracts/erd-api-spec.md) 9장 "프론트-ERD 대조" 참고). 백엔드가 임의로 계약을 바꾸면 프론트와 어긋난다.
 
 OpenAPI와 구현 요구가 충돌할 경우 Coding Agent가 임의로 수정하지 않고 보고하도록, 별도 `AGENTS.md`/`backend-rules.md`에서 규칙화할 예정이다. (이 문서 시점에는 아직 해당 파일이 없다.)
 
@@ -262,7 +262,7 @@ External LLM
 
 **왜**: 일반 회화는 자유 대화 생성과 무점수 피드백을, 면접은 질문 생성·답변 평가·꼬리질문 결정이라는 서로 다른 프롬프트/파싱 로직을 가진다. 하나의 AI Service에 두 로직을 합치면 도메인 규칙이 뒤섞인다.
 
-> Interview의 세부 Agent 구조(Question Generator / Analyzer / Evaluator / Reflection / Coach / Follow-up, [`ai-japanese-speaking-design-study-notes.md`](ai-japanese-speaking-design-study-notes.md) 12장 참고)는 추후 별도 `ai-design.md`에서 상세 설계할 예정이다. 이 문서에서는 `InterviewAiService`가 이 흐름을 담당한다는 경계만 정하고, 내부 구현 세부사항은 확정하지 않는다.
+> Interview의 세부 Agent 구조(Question Generator / Analyzer / Evaluator / Reflection / Coach / Follow-up, [`design-study-notes.md`](../notes/design-study-notes.md) 12장 참고)는 추후 별도 `ai-design.md`에서 상세 설계할 예정이다. 이 문서에서는 `InterviewAiService`가 이 흐름을 담당한다는 경계만 정하고, 내부 구현 세부사항은 확정하지 않는다.
 
 ## 13. AI Processing: 동기 처리 우선
 
@@ -270,7 +270,7 @@ External LLM
 
 **왜**: 초기 사용자 규모에서 동기 호출로 충분하고, 비동기 인프라(메시지 큐, 워커, 재시도 정책)를 미리 도입하면 MVP 개발 복잡도만 늘어난다.
 
-ERD의 `generation_status`(`PENDING` / `PROCESSING` / `COMPLETED` / `FAILED`)는 [`ai-japanese-speaking-erd-api-spec.md`](ai-japanese-speaking-erd-api-spec.md) 3장에 정의된 대로 `conversation_feedbacks`, `interview_answer_feedbacks`, `interview_feedbacks` 세 테이블에 존재한다. 동기 처리라도 이 상태 컬럼 구조는 그대로 유지해, 향후 비동기 평가·재시도로 확장할 때 API/DB 계약을 다시 바꾸지 않아도 되게 한다.
+ERD의 `generation_status`(`PENDING` / `PROCESSING` / `COMPLETED` / `FAILED`)는 [`erd-api-spec.md`](../contracts/erd-api-spec.md) 3장에 정의된 대로 `conversation_feedbacks`, `interview_answer_feedbacks`, `interview_feedbacks` 세 테이블에 존재한다. 동기 처리라도 이 상태 컬럼 구조는 그대로 유지해, 향후 비동기 평가·재시도로 확장할 때 API/DB 계약을 다시 바꾸지 않아도 되게 한다.
 
 ## 14. Speech Architecture
 

@@ -155,11 +155,13 @@ ai-japanese-speaking/
 │       ├── ai/                   # 공통 AI Client
 │       └── common/               # 공통 DTO·예외 처리
 ├── docs/
-│   ├── architecture.md
-│   ├── backend-rules.md
-│   ├── ai-design.md
-│   ├── ai-japanese-speaking-erd-api-spec.md
-│   └── ai-japanese-speaking-openapi.yml
+│   ├── README.md             # 문서 색인
+│   ├── decisions.md          # 설계 결정 기록
+│   ├── architecture/         # architecture.md, ai-design.md
+│   ├── rules/                # backend-rules.md
+│   ├── contracts/            # erd-api-spec.md, openapi.yml, erd.dbml
+│   ├── notes/                # 설계 복습 노트
+│   └── archive/              # 발표 자료 등 보관
 ├── AGENTS.md
 └── README.md
 ```
@@ -190,7 +192,7 @@ API는 OpenAPI-first 원칙으로 관리합니다. 구현된 주요 API 영역�
 | Manager | `/api/manager/dashboard`, `/api/manager/learners` |
 | Admin | `/api/admin/dashboard`, `/api/admin/organizations`, `/api/admin/managers` |
 
-상세 endpoint, 요청·응답 schema, 상태 값은 [OpenAPI 명세](docs/ai-japanese-speaking-openapi.yml)를 참고하세요.
+상세 endpoint, 요청·응답 schema, 상태 값은 [OpenAPI 명세](docs/contracts/openapi.yml)를 참고하세요.
 
 ## Security
 
@@ -272,11 +274,11 @@ npm run dev
 
 | 문서 | 역할 |
 | --- | --- |
-| [architecture.md](docs/architecture.md) | 전체 시스템 구조와 Backend·AI Architecture 결정 |
-| [backend-rules.md](docs/backend-rules.md) | Spring Boot 구현 규칙 |
-| [ai-design.md](docs/ai-design.md) | AI, STT/TTS, Feedback 설계 원칙 |
-| [ai-japanese-speaking-erd-api-spec.md](docs/ai-japanese-speaking-erd-api-spec.md) | Database ERD와 API 설계 기준 |
-| [ai-japanese-speaking-openapi.yml](docs/ai-japanese-speaking-openapi.yml) | API Contract |
+| [architecture.md](docs/architecture/architecture.md) | 전체 시스템 구조와 Backend·AI Architecture 결정 |
+| [backend-rules.md](docs/rules/backend-rules.md) | Spring Boot 구현 규칙 |
+| [ai-design.md](docs/architecture/ai-design.md) | AI, STT/TTS, Feedback 설계 원칙 |
+| [erd-api-spec.md](docs/contracts/erd-api-spec.md) | Database ERD와 API 설계 기준 |
+| [openapi.yml](docs/contracts/openapi.yml) | API Contract |
 
 ## Current Status
 

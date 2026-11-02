@@ -2,7 +2,7 @@
 
 이 문서는 Claude/Codex 등 Coding Agent가 이 프로젝트에서 작업할 때 **무엇을 먼저 읽고, 어떤 범위까지만 작업하고, 어떻게 검증하고, 어떻게 보고해야 하는가**를 정의하는 작업 매뉴얼이다.
 
-이 문서는 Architecture Decision이나 Backend Implementation Rule을 정의하지 않는다. 그 책임은 각각 [`docs/architecture.md`](docs/architecture.md), [`docs/backend-rules.md`](docs/backend-rules.md)에 있다. 이 문서는 Coding Agent가 그 문서들을 반드시 읽고 따르도록 연결하는 절차서다.
+이 문서는 Architecture Decision이나 Backend Implementation Rule을 정의하지 않는다. 그 책임은 각각 [`docs/architecture/architecture.md`](docs/architecture/architecture.md), [`docs/rules/backend-rules.md`](docs/rules/backend-rules.md)에 있다. 이 문서는 Coding Agent가 그 문서들을 반드시 읽고 따르도록 연결하는 절차서다.
 
 ---
 
@@ -11,10 +11,10 @@
 작업 시작 전 아래 순서로 관련 문서를 확인한다.
 
 1. `AGENTS.md` (이 문서)
-2. [`docs/architecture.md`](docs/architecture.md) — 전체 아키텍처와 설계 결정
-3. [`docs/backend-rules.md`](docs/backend-rules.md) — Spring Boot 구현 규칙
-4. 작업과 관련된 ERD/API specification ([`docs/ai-japanese-speaking-erd-api-spec.md`](docs/ai-japanese-speaking-erd-api-spec.md)) — 데이터 모델과 기능/API 설계 기준
-5. [`docs/ai-japanese-speaking-openapi.yml`](docs/ai-japanese-speaking-openapi.yml) — API endpoint, Request/Response, Enum 등의 API Contract
+2. [`docs/architecture/architecture.md`](docs/architecture/architecture.md) — 전체 아키텍처와 설계 결정
+3. [`docs/rules/backend-rules.md`](docs/rules/backend-rules.md) — Spring Boot 구현 규칙
+4. 작업과 관련된 ERD/API specification ([`docs/contracts/erd-api-spec.md`](docs/contracts/erd-api-spec.md)) — 데이터 모델과 기능/API 설계 기준
+5. [`docs/contracts/openapi.yml`](docs/contracts/openapi.yml) — API endpoint, Request/Response, Enum 등의 API Contract
 6. 현재 구현 코드 — 위 계약을 실제로 구현한 결과물
 
 문서와 코드가 충돌하거나 문서끼리 충돌하면 Coding Agent가 임의로 어느 한쪽을 선택해 수정하지 않는다. 불일치를 보고하고 사람의 결정을 기다린다.
