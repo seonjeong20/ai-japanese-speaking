@@ -16,7 +16,7 @@
 
 이 문서와 위 문서가 충돌하면 위 문서(ERD/API/OpenAPI)가 우선한다. Coding Agent는 충돌을 발견하면 임의로 한쪽을 수정하지 않고 보고한다. 세부 절차는 [`AGENTS.md`](../../AGENTS.md)와 [`backend-rules.md`](../rules/backend-rules.md)를 따른다.
 
-> **B2C 전환 중 상태 (2026-11-03)**: 이 문서와 계약 문서(ERD·OpenAPI)는 B2C 목표 구조로 개정했다(소셜 로그인, 역할 `LEARNER` 하나). **코드는 아직 B2B2C 상태**(이메일·비밀번호 가입, 기관 선택과 승인, 역할 3개)이며 개발 단계에서 계약에 맞춘다. 가입·로그인 흐름은 [계정 명세](../specs/account.md).
+> **B2C 전환 상태 (2026-11-03)**: 이 문서와 계약 문서(ERD·OpenAPI)는 B2C 목표 구조로 개정했다(소셜 로그인, 역할 `LEARNER` 하나). 코드도 MVP 계획([plan.md](../plan.md), T1~T7)으로 계약에 맞췄다. 가입·로그인 흐름은 [계정 명세](../specs/account.md).
 
 ## 1. 프로젝트 개요
 

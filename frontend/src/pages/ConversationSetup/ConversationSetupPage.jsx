@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import SegmentedControl from '../../components/setup/SegmentedControl'
@@ -10,6 +10,7 @@ import { CharacterIcon, DescriptionIcon, PersonalityIcon, SituationIcon } from '
 import { DIFFICULTY_OPTIONS, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
 import { defaultSpeakingSettings } from '../../data/settingsMock'
 import { startConversation } from '../../api/conversations'
+import { getPreferences } from '../../api/users'
 import '../../components/setup/SetupForm.css'
 
 const SITUATION_OPTIONS = ['카페에서', '여행 중', '쇼핑할 때', '학교에서', '직장에서', '일상 대화']
@@ -18,7 +19,7 @@ const PERSONALITY_OPTIONS = ['친절하고 활발한', '차분한', '말이 많�
 
 function ConversationSetupPage() {
   const navigate = useNavigate()
-  // 난이도/자막은 Settings > Speaking 기본 설정 값을 이번 회화의 기본값으로 불러옵니다.
+  // 난이도/자막은 Settings에 저장한 기본값을 이번 회화의 기본값으로 불러옵니다(아래 useEffect).
   // 아래에서 세션 한정으로 다른 값을 선택해도 저장된 기본 설정에는 영향을 주지 않습니다.
   const [conversationSettings, setConversationSettings] = useState({
     situation: '',
@@ -31,14 +32,48 @@ function ConversationSetupPage() {
   const [isStarting, setStarting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
+  // 화면을 연 뒤 사용자가 직접 고른 항목입니다. 기본값 응답이 늦게 와도 이 항목은 덮어쓰지 않습니다.
+  const touchedRef = useRef(new Set())
+  // 기본값 조회가 끝날 때까지(성공이든 실패든) [시작]을 막습니다.
+  const [isPreferencesLoading, setPreferencesLoading] = useState(true)
+
+  // 저장한 기본값(GET /api/users/me/preferences)으로 난이도·자막을 미리 채웁니다.
+  // 불러오지 못하면 defaultSpeakingSettings(INTERMEDIATE, JAPANESE_KOREAN)를 그대로 씁니다.
+  useEffect(() => {
+    let ignore = false
+    getPreferences()
+      .then((preferences) => {
+        if (ignore) return
+        setConversationSettings((prev) => ({
+          ...prev,
+          difficulty: touchedRef.current.has('difficulty')
+            ? prev.difficulty
+            : preferences?.defaultDifficulty ?? prev.difficulty,
+          subtitleMode: touchedRef.current.has('subtitleMode')
+            ? prev.subtitleMode
+            : preferences?.defaultSubtitleMode ?? prev.subtitleMode,
+        }))
+      })
+      .catch(() => {
+        // 기본값을 쓰고 화면은 그대로 사용할 수 있게 둡니다.
+      })
+      .finally(() => {
+        if (!ignore) setPreferencesLoading(false)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
+
   const updateSetting = (key, value) => {
+    touchedRef.current.add(key)
     setConversationSettings((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleBack = () => navigate('/learning')
 
   const handleStartConversation = async () => {
-    if (isStarting) return
+    if (isStarting || isPreferencesLoading) return
     setStarting(true)
     setErrorMessage('')
     try {
@@ -124,9 +159,9 @@ function ConversationSetupPage() {
         )}
 
         <SetupCta
-          label={isStarting ? '시작하는 중...' : '대화 시작하기 →'}
+          label={isPreferencesLoading ? '기본 설정을 불러오는 중...' : isStarting ? '시작하는 중...' : '대화 시작하기 →'}
           onClick={handleStartConversation}
-          disabled={isStarting}
+          disabled={isStarting || isPreferencesLoading}
         />
       </div>
     </LearnerLayout>
