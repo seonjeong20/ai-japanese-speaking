@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -38,10 +39,12 @@ public class UserPreference {
     private User user;
 
     @Enumerated(EnumType.STRING)
+    @ColumnDefault("'INTERMEDIATE'")
     @Column(name = "default_difficulty", length = 20, nullable = false)
     private Difficulty defaultDifficulty;
 
     @Enumerated(EnumType.STRING)
+    @ColumnDefault("'JAPANESE_KOREAN'")
     @Column(name = "default_subtitle_mode", length = 30, nullable = false)
     private SubtitleMode defaultSubtitleMode;
 

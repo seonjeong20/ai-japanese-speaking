@@ -9,8 +9,12 @@ import com.aijapanese.speaking.preference.repository.UserPreferenceRepository;
 import com.aijapanese.speaking.user.entity.User;
 import com.aijapanese.speaking.user.exception.UserNotFoundException;
 import com.aijapanese.speaking.user.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 
@@ -26,10 +30,19 @@ public class UserPreferenceService {
 
     private final UserPreferenceRepository userPreferenceRepository;
     private final UserRepository userRepository;
+    private final TransactionTemplate transactionTemplate;
+    private final TransactionTemplate newTransactionTemplate;
 
-    public UserPreferenceService(UserPreferenceRepository userPreferenceRepository, UserRepository userRepository) {
+    public UserPreferenceService(
+            UserPreferenceRepository userPreferenceRepository,
+            UserRepository userRepository,
+            PlatformTransactionManager transactionManager
+    ) {
         this.userPreferenceRepository = userPreferenceRepository;
         this.userRepository = userRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.newTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.newTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     /**
@@ -45,18 +58,35 @@ public class UserPreferenceService {
 
     /**
      * 사용자당 한 행을 만들거나 고친다.
+     * 첫 저장이 동시에 와서 user_id 유일 제약 위반이 나면, 새 트랜잭션에서 먼저 저장된 행을 다시 읽어 이번 값으로 고친다.
      */
-    @Transactional
     public UserPreferencesResponse update(Long userId, UpdateUserPreferencesRequest request) {
-        LocalDateTime now = LocalDateTime.now();
-        UserPreference preference = userPreferenceRepository.findByUser_Id(userId)
-                .map(existing -> {
-                    existing.update(request.defaultDifficulty(), request.defaultSubtitleMode(), now);
-                    return existing;
-                })
-                .orElseGet(() -> userPreferenceRepository.save(new UserPreference(
-                        findUser(userId), request.defaultDifficulty(), request.defaultSubtitleMode(), now)));
+        try {
+            return transactionTemplate.execute(status -> createOrUpdate(userId, request));
+        } catch (DataIntegrityViolationException ex) {
+            return newTransactionTemplate.execute(status -> userPreferenceRepository.findByUser_Id(userId)
+                    .map(existing -> updateExisting(existing, request))
+                    .orElseThrow(() -> ex));
+        }
+    }
 
+    private UserPreferencesResponse createOrUpdate(Long userId, UpdateUserPreferencesRequest request) {
+        return userPreferenceRepository.findByUser_Id(userId)
+                .map(existing -> updateExisting(existing, request))
+                .orElseGet(() -> {
+                    UserPreference created = userPreferenceRepository.save(new UserPreference(
+                            findUser(userId), request.defaultDifficulty(), request.defaultSubtitleMode(),
+                            LocalDateTime.now()));
+                    return savedResponse(created);
+                });
+    }
+
+    private UserPreferencesResponse updateExisting(UserPreference existing, UpdateUserPreferencesRequest request) {
+        existing.update(request.defaultDifficulty(), request.defaultSubtitleMode(), LocalDateTime.now());
+        return savedResponse(existing);
+    }
+
+    private static UserPreferencesResponse savedResponse(UserPreference preference) {
         return new UserPreferencesResponse(
                 preference.getDefaultDifficulty(), preference.getDefaultSubtitleMode(), SAVED_MESSAGE);
     }
