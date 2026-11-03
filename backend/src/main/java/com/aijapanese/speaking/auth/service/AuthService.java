@@ -14,8 +14,10 @@ import com.aijapanese.speaking.user.entity.OAuthProvider;
 import com.aijapanese.speaking.user.entity.User;
 import com.aijapanese.speaking.user.exception.UserNotFoundException;
 import com.aijapanese.speaking.user.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -32,6 +34,7 @@ public class AuthService {
     private final SocialProfileClient socialProfileClient;
     private final JwtTokenProvider jwtTokenProvider;
     private final TransactionTemplate transactionTemplate;
+    private final TransactionTemplate newTransactionTemplate;
 
     public AuthService(
             UserRepository userRepository,
@@ -43,6 +46,8 @@ public class AuthService {
         this.socialProfileClient = socialProfileClient;
         this.jwtTokenProvider = jwtTokenProvider;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.newTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.newTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     /**
@@ -60,7 +65,37 @@ public class AuthService {
             throw new OAuthProviderException(null);
         }
 
-        return transactionTemplate.execute(status -> loginOrSignup(provider, profile));
+        try {
+            return transactionTemplate.execute(status -> loginOrSignup(provider, profile));
+        } catch (DataIntegrityViolationException ex) {
+            // 조회와 저장 사이에 다른 요청이 같은 계정이나 같은 이메일 계정을 먼저 만들었다.
+            return newTransactionTemplate.execute(status -> recoverFromConflict(provider, profile, ex));
+        }
+    }
+
+    /**
+     * 유일 제약 위반 뒤 새 트랜잭션에서 다시 조회한다.
+     * 같은 (제공자, 고유 ID) 계정이 있으면 그 계정으로 로그인하고, 같은 이메일 계정이 있으면 409,
+     * 둘 다 없으면 원래 예외를 그대로 던진다.
+     */
+    private LoginResponse recoverFromConflict(
+            OAuthProvider provider,
+            SocialProfile profile,
+            DataIntegrityViolationException ex
+    ) {
+        Optional<User> sameAccount = userRepository.findByProviderAndProviderUserId(provider, profile.providerUserId());
+        if (sameAccount.isPresent()) {
+            User user = sameAccount.get();
+            user.updateLastLoginAt(LocalDateTime.now());
+            return toLoginResponse(user, false);
+        }
+        if (!isBlank(profile.email())) {
+            Optional<User> sameEmail = userRepository.findByEmail(profile.email());
+            if (sameEmail.isPresent()) {
+                throw new EmailAlreadyRegisteredException(sameEmail.get().getProvider());
+            }
+        }
+        throw ex;
     }
 
     private LoginResponse loginOrSignup(OAuthProvider provider, SocialProfile profile) {

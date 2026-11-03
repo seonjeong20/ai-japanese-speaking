@@ -11,21 +11,30 @@ import com.aijapanese.speaking.user.entity.UserRole;
 import com.aijapanese.speaking.user.entity.UserStatus;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,8 +56,11 @@ class SocialLoginIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoSpyBean
     private UserRepository userRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @MockitoBean
     private SocialProfileClient socialProfileClient;
@@ -325,6 +337,44 @@ class SocialLoginIntegrationTest {
                 .andExpect(jsonPath("$.message").isNotEmpty());
 
         verify(socialProfileClient, never()).fetch(any(), any(), any());
+    }
+
+    // 리뷰 수정: 이메일 확인과 저장 사이에 다른 요청이 같은 이메일로 다른 제공자 계정을 먼저 만든 경우.
+    // 유일 제약 위반이 500이 아니라 409여야 한다. 실제 커밋이 필요해 테스트 트랜잭션을 쓰지 않고 직접 지운다.
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void concurrentSignupSameEmail_is409() throws Exception {
+        String email = "race-" + System.nanoTime() + "@x.com";
+        TransactionTemplate otherRequest = new TransactionTemplate(transactionManager);
+        otherRequest.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        long before = userRepository.count();
+        try {
+            givenProfile(OAuthProvider.GOOGLE, "code-1",
+                    new SocialProfile(OAuthProvider.GOOGLE, "g-race", email, true, "홍길동"));
+            // 첫 save 직전에 다른 요청(새 트랜잭션)이 같은 이메일의 카카오 계정을 먼저 저장·커밋한다.
+            // Spring Data 저장소는 JDK 프록시라 callRealMethod를 쓸 수 없어, 스파이의 기본 응답(실제 저장소로 위임)을 쓴다.
+            Answer<?> realCall = Mockito.mockingDetails(userRepository).getMockCreationSettings().getDefaultAnswer();
+            AtomicBoolean firstSave = new AtomicBoolean(true);
+            doAnswer(invocation -> {
+                if (firstSave.compareAndSet(true, false)) {
+                    otherRequest.executeWithoutResult(status -> userRepository.save(
+                            new User(OAuthProvider.KAKAO, "k-race", "카카오사용자", email, LocalDateTime.now())));
+                }
+                return realCall.answer(invocation);
+            }).when(userRepository).save(any(User.class));
+
+            login("google", "code-1")
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_REGISTERED"))
+                    .andExpect(jsonPath("$.registeredProvider").value("kakao"));
+
+            assertThat(userRepository.count()).isEqualTo(before + 1);
+            assertThat(userRepository.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, "g-race")).isEmpty();
+            assertThat(userRepository.findByEmail(email).orElseThrow().getProvider()).isEqualTo(OAuthProvider.KAKAO);
+        } finally {
+            otherRequest.executeWithoutResult(status ->
+                    userRepository.findByEmail(email).ifPresent(userRepository::delete));
+        }
     }
 
     private void givenProfile(OAuthProvider provider, String code, SocialProfile profile) {
