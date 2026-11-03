@@ -2,6 +2,24 @@
 
 이 프로젝트에서 내린 결정과 그 이유를 기록한다. 최신 결정을 위에 쓰고, 바뀐 결정은 지우지 않고 제목에 "— 위 결정으로 대체됨"을 붙인다.
 
+## 2026-11-03 B2C 명세: 사용자 역할 (사용자 결정)
+
+| 결정 | 이유 | 대안 |
+|---|---|---|
+| 사용자 역할(`users.role`) 칸은 남기고 값은 `LEARNER` 하나만 쓴다. `MANAGER`, `ADMIN` 값과 관련 기능은 없앤다 | 이번 범위가 기존 기능 수정부터라 바꿀 곳이 적은 쪽을 고른다. 나중에 운영자 기능이 생기면 값만 추가하면 된다 (Claude가 두 안을 비교해 추천하고 사용자가 선택) | 역할 개념 자체를 없앰: DB 역할 칸, 토큰의 역할 정보, 역할 확인 코드를 모두 지운다 |
+
+- 영향: `architecture.md`, ERD(`users.role`), OpenAPI(Role enum), 인증 코드.
+
+## 2026-11-03 B2C 명세: Docker 도입 (배포 + 로컬 개발) (사용자 결정)
+
+| 결정 | 이유 | 대안 |
+|---|---|---|
+| 백엔드(Spring Boot)를 Render에 배포할 때 Docker를 쓴다. 로컬 개발 환경도 Docker Compose로 띄운다. `backend-rules.md`의 "아직 채택하지 않은 기술" 중 Docker를 채택한다 | Render에는 Java 기본 실행 환경(native runtime)이 없어, JVM 언어는 Docker로 배포하라고 안내한다([Render Native Runtimes](https://render.com/docs/native-environments), [Docker on Render](https://render.com/docs/docker)) | 배포: Java를 기본 지원하는 다른 배포처로 바꾸기. 로컬: 지금처럼 셸 환경변수로 직접 실행 |
+
+- 로컬 개발도 Docker Compose로 하는 것은 사용자가 정했다. Compose에 어떤 서비스(백엔드, DB, 프론트엔드)를 넣을지는 개발 계획에서 정한다.
+- 영향: 백엔드에 `Dockerfile`, 저장소에 Docker Compose 설정 추가, `backend-rules.md` "아직 채택하지 않은 기술" 갱신, `architecture.md` 배포 구성.
+- 관련 열린 질문: "Spring Boot에서 `.env`를 읽는 방법"(2026-11-02 비밀값 결정)은 Docker Compose 구성과 함께 개발 계획에서 정한다.
+
 ## 2026-11-02 B2C 기획 범위 (사용자 결정)
 
 근거: [product/raw-notes.md](product/raw-notes.md), [product/problem.md](product/problem.md). 아래 "B2B2C → B2C 전환"의 열린 질문 중 Manager·Organization 처리, Admin 범위, 가입 승인 절차를 여기서 정한다.

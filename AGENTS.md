@@ -79,7 +79,7 @@
 
 ## 8. Dependency / Technology Rule
 
-새로운 dependency, library, infrastructure를 임의로 추가하지 않는다. 특히 `backend-rules.md`에서 아직 채택하지 않은 기술(Lombok, MapStruct, Flyway, Redis, Docker, QueryDSL, Testcontainers, Message Queue 등)을 임의로 도입하지 않는다.
+새로운 dependency, library, infrastructure를 임의로 추가하지 않는다. 특히 `backend-rules.md`에서 아직 채택하지 않은 기술(Lombok, MapStruct, Flyway, Redis, QueryDSL, Testcontainers, Message Queue 등. Docker는 배포와 로컬 개발(Docker Compose)용으로 채택)을 임의로 도입하지 않는다.
 
 새 기술이 실제로 필요하다고 판단되면 다음을 먼저 보고하고 사람의 결정을 기다린다.
 
