@@ -121,7 +121,7 @@
 - 비밀번호·기관·부서 열은 엔티티에서 없앤다.
 
 **완료 기준**
-- [ ] `grep -rniE 'organization|manager|admin|password' backend/src`가 아무것도 찾지 않는다
+- [ ] `grep -rniE 'organization|manager|admin|password' backend/src | grep -vE 'EntityManager|entityManager|UsernamePassword|DB_PASSWORD|KAKAO_ADMIN_KEY'`가 아무것도 찾지 않는다 (T1 설정 이름과 Spring·JPA 클래스 이름은 제외)
 - [ ] `UserRepositoryTest.providerAndId_isUnique`: 같은 (`GOOGLE`, `g-1`)을 두 번 저장하면 `DataIntegrityViolationException`
 - [ ] `UserRepositoryTest.sameIdDifferentProvider_isAllowed`: (`GOOGLE`, `g-1`)과 (`KAKAO`, `g-1`)은 둘 다 저장된다 (TC-12의 저장소 부분)
 - [ ] `AuthMeIntegrationTest.me_returnsProvider`: `TestUsers.learner`의 토큰으로 `GET /api/auth/me` → 200, `provider`가 `"google"`, `role`이 `"LEARNER"`, `organization`·`department` 필드 없음

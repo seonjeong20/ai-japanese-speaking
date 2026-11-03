@@ -2,7 +2,6 @@ package com.aijapanese.speaking.interview.service;
 
 import com.aijapanese.speaking.ai.AiClient;
 import com.aijapanese.speaking.ai.AiServiceException;
-import com.aijapanese.speaking.auth.security.JwtTokenProvider;
 import com.aijapanese.speaking.conversation.entity.Difficulty;
 import com.aijapanese.speaking.conversation.entity.SubtitleMode;
 import com.aijapanese.speaking.interview.ai.InterviewAiService;
@@ -22,9 +21,6 @@ import com.aijapanese.speaking.interview.repository.InterviewAnswerFeedbackRepos
 import com.aijapanese.speaking.interview.repository.InterviewAnswerRepository;
 import com.aijapanese.speaking.interview.repository.InterviewEvaluationScoreRepository;
 import com.aijapanese.speaking.interview.repository.InterviewQuestionRepository;
-import com.aijapanese.speaking.organization.entity.Organization;
-import com.aijapanese.speaking.organization.entity.OrganizationStatus;
-import com.aijapanese.speaking.organization.repository.OrganizationRepository;
 import com.aijapanese.speaking.speaking.entity.SessionStatus;
 import com.aijapanese.speaking.speaking.entity.Speaker;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionAccessDeniedException;
@@ -32,21 +28,14 @@ import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundExcepti
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotInProgressException;
 import com.aijapanese.speaking.speaking.repository.SpeakingMessageRepository;
 import com.aijapanese.speaking.speaking.repository.SpeakingSessionRepository;
-import com.aijapanese.speaking.user.entity.User;
-import com.aijapanese.speaking.user.entity.UserRole;
-import com.aijapanese.speaking.user.entity.UserStatus;
+import com.aijapanese.speaking.support.TestUsers;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -60,11 +49,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
 class InterviewAnswerServiceIntegrationTest {
 
@@ -76,10 +62,6 @@ class InterviewAnswerServiceIntegrationTest {
     @Autowired private InterviewAnswerFeedbackRepository feedbackRepository;
     @Autowired private InterviewEvaluationScoreRepository scoreRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private OrganizationRepository organizationRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private JwtTokenProvider jwtTokenProvider;
-    @Autowired private MockMvc mockMvc;
 
     @MockitoBean private InterviewAiService interviewAiService;
     @MockitoBean private InterviewAnswerEvaluationAiService evaluationAiService;
@@ -98,7 +80,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void learnerAudioAnswer_savesTranscriptAnalysisFeedbackAndStarScore() {
-        StartedInterview started = startInterview("answer-success@example.com", UserRole.LEARNER);
+        StartedInterview started = startInterview("answer-success");
         when(aiClient.transcribe(any())).thenReturn("チームで原因を分析し、問題を解決しました。");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(true));
 
@@ -150,7 +132,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void starNotRecommended_savesNullNonApplicableAndExcludesItFromAverage() {
-        StartedInterview started = startInterview("star-na@example.com", UserRole.LEARNER);
+        StartedInterview started = startInterview("star-na");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(false));
 
         var response = interviewService.submitTextAnswer(
@@ -168,8 +150,8 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void otherUserCannotAnswerAndMissingSessionOrQuestionReturnsDomainErrors() {
-        StartedInterview owner = startInterview("owner@example.com", UserRole.LEARNER);
-        Long otherUserId = createUser("other@example.com", UserRole.LEARNER);
+        StartedInterview owner = startInterview("owner");
+        Long otherUserId = createUser("other");
 
         assertThatThrownBy(() -> interviewService.submitTextAnswer(
                 owner.sessionId(), owner.questionId(), otherUserId, "回答"
@@ -184,13 +166,13 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void completedAndAbortedSessionsRejectAnswers() {
-        StartedInterview completed = startInterview("completed@example.com", UserRole.LEARNER);
+        StartedInterview completed = startInterview("completed");
         speakingSessionRepository.findById(completed.sessionId()).orElseThrow().complete(LocalDateTime.now());
         assertThatThrownBy(() -> interviewService.submitTextAnswer(
                 completed.sessionId(), completed.questionId(), completed.userId(), "回答"
         )).isInstanceOf(SpeakingSessionNotInProgressException.class);
 
-        StartedInterview aborted = startInterview("aborted@example.com", UserRole.LEARNER);
+        StartedInterview aborted = startInterview("aborted");
         speakingSessionRepository.findById(aborted.sessionId()).orElseThrow().abort(LocalDateTime.now());
         assertThatThrownBy(() -> interviewService.submitTextAnswer(
                 aborted.sessionId(), aborted.questionId(), aborted.userId(), "回答"
@@ -199,7 +181,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void duplicateQuestionAnswerIsRejected() {
-        StartedInterview started = startInterview("duplicate@example.com", UserRole.LEARNER);
+        StartedInterview started = startInterview("duplicate");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(false));
         interviewService.submitTextAnswer(started.sessionId(), started.questionId(), started.userId(), "最初の回答");
         long questionCountAfterFirstRequest = questionRepository.count();
@@ -213,7 +195,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void initialAnswerCanCreateFollowUpWithDbmlRelations() {
-        StartedInterview started = startInterview("initial-follow-up@example.com", UserRole.LEARNER);
+        StartedInterview started = startInterview("initial-follow-up");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(true));
         when(coachingAiService.coach(any(), any(), any(), any(), any(Boolean.class)))
                 .thenReturn(coaching(true));
@@ -235,7 +217,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void followUpAnswerCannotCreateNestedFollowUpAndMovesToNextInitial() {
-        StartedInterview started = startInterview("no-nested-follow-up@example.com", UserRole.LEARNER);
+        StartedInterview started = startInterview("no-nested-follow-up");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(true));
         when(coachingAiService.coach(any(), any(), any(), any(), any(Boolean.class)))
                 .thenReturn(coaching(true));
@@ -256,7 +238,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void backendEnforcesFiveInitialsOneFollowUpEachAndTenQuestionMaximum() {
-        StartedInterview started = startInterview("maximum-progression@example.com", UserRole.LEARNER);
+        StartedInterview started = startInterview("maximum-progression");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(true));
         when(coachingAiService.coach(any(), any(), any(), any(), any(Boolean.class)))
                 .thenAnswer(invocation -> coaching(invocation.getArgument(4)));
@@ -294,7 +276,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void coachingOrNextInitialAiFailureLeavesNoPartialProgressionData() {
-        StartedInterview coachingFailure = startInterview("coaching-fail@example.com", UserRole.LEARNER);
+        StartedInterview coachingFailure = startInterview("coaching-fail");
         when(evaluationAiService.evaluate(any(), any(), any())).thenReturn(evaluation(false));
         when(coachingAiService.coach(any(), any(), any(), any(), any(Boolean.class)))
                 .thenThrow(new AiServiceException("coaching failed"));
@@ -304,7 +286,7 @@ class InterviewAnswerServiceIntegrationTest {
         )).isInstanceOf(AiServiceException.class);
         assertNoAnswerData(coachingFailure);
 
-        StartedInterview nextInitialFailure = startInterview("next-initial-fail@example.com", UserRole.LEARNER);
+        StartedInterview nextInitialFailure = startInterview("next-initial-fail");
         doReturn(coaching(false)).when(coachingAiService)
                 .coach(any(), any(), any(), any(), any(Boolean.class));
         when(interviewAiService.generateNextInitialQuestion(any(), any()))
@@ -318,7 +300,7 @@ class InterviewAnswerServiceIntegrationTest {
 
     @Test
     void sttOrEvaluationFailureLeavesNoPartialAnswerData() {
-        StartedInterview sttFailure = startInterview("stt-fail@example.com", UserRole.LEARNER);
+        StartedInterview sttFailure = startInterview("stt-fail");
         when(aiClient.transcribe(any())).thenThrow(new AiServiceException("STT failed"));
 
         assertThatThrownBy(() -> interviewService.submitAudioAnswer(
@@ -326,29 +308,12 @@ class InterviewAnswerServiceIntegrationTest {
         )).isInstanceOf(AiServiceException.class);
         assertNoAnswerData(sttFailure);
 
-        StartedInterview evaluationFailure = startInterview("evaluation-fail@example.com", UserRole.LEARNER);
+        StartedInterview evaluationFailure = startInterview("evaluation-fail");
         when(evaluationAiService.evaluate(any(), any(), any())).thenThrow(new AiServiceException("evaluation failed"));
         assertThatThrownBy(() -> interviewService.submitTextAnswer(
                 evaluationFailure.sessionId(), evaluationFailure.questionId(), evaluationFailure.userId(), "回答"
         )).isInstanceOf(AiServiceException.class);
         assertNoAnswerData(evaluationFailure);
-    }
-
-    @Test
-    void managerAndAdminCannotAccessAudioAnswerApi() throws Exception {
-        StartedInterview interview = startInterview("api-owner@example.com", UserRole.LEARNER);
-        MockMultipartFile audio = new MockMultipartFile("audio", "answer.webm", "audio/webm", new byte[]{1});
-
-        for (UserRole role : List.of(UserRole.MANAGER, UserRole.ADMIN)) {
-            Long userId = createUser(role.name().toLowerCase() + "-answer-api@example.com", role);
-            String token = jwtTokenProvider.generateToken(userId, role);
-            mockMvc.perform(multipart("/api/interviews/{sessionId}/questions/{questionId}/answer/audio",
-                            interview.sessionId(), interview.questionId())
-                            .file(audio)
-                            .header("Authorization", "Bearer " + token)
-                            .contentType(MediaType.MULTIPART_FORM_DATA))
-                    .andExpect(status().isForbidden());
-        }
     }
 
     private void assertNoAnswerData(StartedInterview started) {
@@ -362,22 +327,16 @@ class InterviewAnswerServiceIntegrationTest {
                 .isEqualTo(QuestionStatus.ASKED);
     }
 
-    private StartedInterview startInterview(String email, UserRole role) {
-        Long userId = createUser(email, role);
+    private StartedInterview startInterview(String suffix) {
+        Long userId = createUser(suffix);
         var response = interviewService.startInterview(userId, new InterviewStartRequest(
                 "Backend Developer", "BEHAVIORAL", Difficulty.INTERMEDIATE, null, SubtitleMode.JAPANESE
         ));
         return new StartedInterview(userId, response.sessionId(), response.firstQuestion().questionId());
     }
 
-    private Long createUser(String email, UserRole role) {
-        Organization organization = organizationRepository.save(
-                new Organization("Test Org " + email, OrganizationStatus.ACTIVE, LocalDateTime.now())
-        );
-        return userRepository.save(new User(
-                organization, "Test " + role, email, passwordEncoder.encode("password123"),
-                null, role, UserStatus.ACTIVE, LocalDateTime.now()
-        )).getId();
+    private Long createUser(String suffix) {
+        return TestUsers.learner(userRepository, suffix).getId();
     }
 
     private InterviewAnswerEvaluationAiResult evaluation(boolean starRecommended) {
