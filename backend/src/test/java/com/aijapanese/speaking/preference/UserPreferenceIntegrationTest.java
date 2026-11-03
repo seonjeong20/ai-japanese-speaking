@@ -17,18 +17,28 @@ import com.aijapanese.speaking.user.kakao.KakaoUnlinkClient;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -61,8 +71,10 @@ class UserPreferenceIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
-    @Autowired
+    @MockitoSpyBean
     private UserPreferenceRepository userPreferenceRepository;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
     @Autowired
     private SpeakingSessionRepository speakingSessionRepository;
     @Autowired
@@ -226,6 +238,51 @@ class UserPreferenceIntegrationTest {
         flushAndClear();
 
         assertThat(rowCountOf(user.getId())).isZero();
+    }
+
+    // 리뷰 수정: 첫 저장이 동시에 온 경우. 조회와 저장 사이에 다른 요청이 같은 사용자의 행을 먼저 만들었다.
+    // 유일 제약 위반이 500이 아니라, 먼저 만든 행을 이번 값으로 고친 200이어야 한다.
+    // 실제 커밋이 필요해 테스트 트랜잭션을 쓰지 않고 마지막에 직접 지운다.
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void patch_concurrentFirstSave_updatesExistingRow() throws Exception {
+        TransactionTemplate otherRequest = new TransactionTemplate(transactionManager);
+        otherRequest.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        User user = otherRequest.execute(status ->
+                TestUsers.learner(userRepository, "pref-race-" + System.nanoTime()));
+        try {
+            // 첫 save 직전에 다른 요청(새 트랜잭션)이 같은 사용자의 행을 BEGINNER/OFF로 먼저 저장·커밋한다.
+            // Spring Data 저장소는 JDK 프록시라 callRealMethod를 쓸 수 없어, 스파이의 기본 응답(실제 저장소로 위임)을 쓴다.
+            Answer<?> realCall = Mockito.mockingDetails(userPreferenceRepository)
+                    .getMockCreationSettings().getDefaultAnswer();
+            AtomicBoolean firstSave = new AtomicBoolean(true);
+            doAnswer(invocation -> {
+                if (firstSave.compareAndSet(true, false)) {
+                    otherRequest.executeWithoutResult(status -> userPreferenceRepository.save(new UserPreference(
+                            userRepository.getReferenceById(user.getId()),
+                            Difficulty.BEGINNER, SubtitleMode.OFF, LocalDateTime.now())));
+                }
+                return realCall.answer(invocation);
+            }).when(userPreferenceRepository).save(any(UserPreference.class));
+
+            patchPreferences(tokenOf(user), body("ADVANCED", "JAPANESE"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.defaultDifficulty").value("ADVANCED"))
+                    .andExpect(jsonPath("$.defaultSubtitleMode").value("JAPANESE"))
+                    .andExpect(jsonPath("$.message").value("설정이 저장되었습니다."));
+
+            assertThat(firstSave.get()).isFalse();
+            otherRequest.executeWithoutResult(status -> {
+                assertThat(rowCountOf(user.getId())).isEqualTo(1);
+                UserPreference saved = userPreferenceRepository.findByUser_Id(user.getId()).orElseThrow();
+                assertThat(saved.getDefaultDifficulty()).isEqualTo(Difficulty.ADVANCED);
+                assertThat(saved.getDefaultSubtitleMode()).isEqualTo(SubtitleMode.JAPANESE);
+                assertThat(saved.getUpdatedAt()).isNotNull();
+            });
+        } finally {
+            // 사용자를 지우면 DB의 ON DELETE CASCADE가 user_preferences 행도 지운다.
+            otherRequest.executeWithoutResult(status -> userRepository.deleteById(user.getId()));
+        }
     }
 
     // ---- 도우미 ----
