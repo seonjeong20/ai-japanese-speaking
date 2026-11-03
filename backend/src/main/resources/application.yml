@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:../.env[.properties]
   application:
     name: ai-japanese-speaking
   datasource:
@@ -14,7 +16,7 @@ spring:
       max-request-size: 20MB
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY:}
+      api-key: ${OPENAI_API_KEY:unset}
       chat:
         options:
           model: gpt-4o-mini
@@ -31,3 +33,6 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
+
+kakao:
+  admin-key: ${KAKAO_ADMIN_KEY:unset}

@@ -28,7 +28,7 @@ TC-10(로그아웃), TC-11(토큰 만료 시 첫 화면 이동), TC-13(로그인
 
 | 순서 | 트랙 | 상태 | 리뷰 | PR |
 |---|---|---|---|---|
-| 1 | T1 `infra-env` | 대기 | — | — |
+| 1 | T1 `infra-env` | PR 생성 | Codex: 차단 0, 중요 4 (반영·확인) | (PR 링크는 아래 커밋 후 기록) |
 | 2 | T2 `backend-b2c-cleanup` | 대기 | — | — |
 | 3 | T3 `backend-oauth-login` | 대기 | — | — |
 | 4 | T4 `backend-account-delete` | 대기 | — | — |
