@@ -158,3 +158,39 @@ PRD 3·12·13장의 근거 자료다. 가격과 기능은 바뀔 수 있으니 �
 - 대부분 영어 학습, 청소년·대학생, 문법 항목 대상이다. **한국인 성인이 AI와 일본어로 음성 대화하는 상황을 직접 비교한 연구는 찾지 못했다.**
 - 가장 가까운 AI 챗봇 연구도 음성이 아니라 텍스트이고, 장기 지연 검사가 없다.
 - 연구마다 "지연"의 뜻이 다르다(과제 직후, 24시간 후, 며칠 후). 우리의 "대화 직후 피드백"과 같은 조건이 아닌 연구가 섞여 있다.
+
+## 7. 소셜 로그인 (구글·카카오) 조사
+
+조사일: 2026-11-03 · 조사: Codex(웹 검색) + Claude(카카오 이메일 조건 원문 확인). 검증 대상은 decisions.md 2026-11-03 "소셜 로그인" 결정과 같은 이메일 규칙이다.
+
+### 7.1 받을 수 있는 정보
+
+| 항목 | 구글 | 카카오 |
+|---|---|---|
+| 바뀌지 않는 사용자 ID | `sub` (구글은 바뀌지 않는다고 설명) 🔎 | 회원번호 `id`. 연결 해제 후 재가입해도 같은 번호(2018-09-19 이전 앱 예외) 🔎 |
+| 이메일 | `openid email` scope를 요청하면 `email`과 `email_verified`가 온다 🔎 | `account_email` 동의 항목. **동의 단계(필수·선택)를 설정하려면 비즈 앱 또는 테스트 앱이어야 한다** ✅ |
+| 이메일 인증 여부 | `email_verified` 🔎 | `is_email_verified`, `is_email_valid` 🔎 |
+| 이름 | `profile` scope. 요청해도 항상 오지는 않는다 🔎 | 닉네임 `profile_nickname` 🔎 |
+
+### 7.2 개인 개발자 제한
+
+- **카카오**: "카카오로그인은 누구나 사용할 수 있지만, [개인정보 동의항목] 권한 신청은 사업자 정보가 등록된 비즈 앱만 가능합니다." 사업자 정보가 없으면 테스트 앱으로 "앱 멤버를 대상으로 개발 및 테스트할 수 있습니다." ✅ [카카오 FAQ](https://developers.kakao.com/docs/ko/kakaologin/faq), [동의항목](https://developers.kakao.com/docs/ko/kakaologin/utilize)
+  - 즉 사업자 등록 없이 일반 사용자에게서 이메일을 받기는 어렵다. 앱 멤버로 등록한 사람(본인, 테스터)만 대상으로 할 수 있다.
+  - 필수 동의로 설정해도 카카오 계정에 이메일이 없으면 비어 있을 수 있다. 🔎
+- **구글**: scope가 `openid`, `email`, `profile`뿐이면 테스트 상태에서도 테스트 사용자 목록(최대 100명) 없이 쓸 수 있고, 민감 scope가 아니어서 검수 대상이 아니다. 🔎 [구글 앱 상태·검수](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)
+
+### 7.3 같은 이메일 규칙의 주의점
+
+- **구글과 카카오 모두 이메일을 회원 ID로 쓰지 말라고 안내한다.** 이메일은 바뀔 수 있다. 계정 식별은 `sub`, 회원번호 `id`로 해야 한다. 🔎 [구글 OIDC](https://developers.google.com/identity/openid-connect/reference), [카카오 로그인 이해하기](https://developers.kakao.com/docs/ko/kakaologin/common)
+- 이메일을 받지 못할 수 있다(구글은 scope, 카카오는 동의·계정 이메일 여부에 따라).
+- 인증되지 않은 이메일이 올 수 있어, 인증 여부 필드를 확인해야 한다.
+
+### 7.4 Spring Boot 연동
+
+- 공식 의존성은 `spring-boot-starter-oauth2-client`다. 🔎 [Spring Security OAuth2](https://docs.spring.io/spring-security/reference/servlet/oauth2/)
+- 구글은 Spring Boot 기본 제공자에 있고, **카카오는 없어서** 제공자 설정(`spring.security.oauth2.client.provider.kakao`)을 직접 써야 한다. 🔎 [Spring Boot OAuth2](https://docs.spring.io/spring-boot/reference/security/oauth2.html)
+
+### 7.5 한계
+
+- 카카오 이메일 조건(7.2)만 원문을 직접 확인했다. 나머지는 Codex가 찾은 공식 문서 출처다.
+- 카카오 테스트 앱 멤버 수 제한과, 테스트 앱에서 이메일 동의를 실제로 받을 수 있는지는 콘솔에서 직접 확인해야 한다.
