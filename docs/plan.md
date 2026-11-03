@@ -38,7 +38,7 @@
 | 제공자가 이름을 주지 않을 때 | 이메일의 `@` 앞부분을 이름으로 저장 |
 | 로그인 위조 방지(state) | 프론트가 무작위 `state`를 만들어 `sessionStorage`에 두고, 돌아왔을 때 다르면 첫 화면에 "로그인에 실패했습니다. 다시 시도해 주세요" |
 | 로그인 후 돌아오는 주소 | `{프론트 주소}/auth/callback/{provider}` |
-| 로컬 DB 포트 | 호스트 `5433` (이미 설치된 PostgreSQL 5432와 겹치지 않게) |
+| 로컬 DB 포트 | 호스트 `5434` (이 컴퓨터의 5432·5433은 이미 다른 PostgreSQL이 씀) |
 | 기존 로컬 DB 데이터 | 옮기지 않는다. Compose의 새 DB에서 시작한다(`users` 구조가 바뀌어 `ddl-auto: update`로는 맞출 수 없음) |
 
 ## 리뷰 중점
@@ -84,13 +84,13 @@
 
 **정한 것**
 - `application.yml` 맨 위에 `spring.config.import: optional:file:../.env[.properties]`. 작업 폴더가 `backend/`일 때 저장소 루트의 `.env`를 읽는다.
-- Compose `db`: `postgres:16`, 호스트 `5433` → 컨테이너 `5432`, 이름 있는 볼륨, `pg_isready` 상태 확인. `POSTGRES_DB/USER/PASSWORD`는 `.env`의 `DB_NAME/DB_USERNAME/DB_PASSWORD`로 채운다.
+- Compose `db`: `postgres:16`, 호스트 `5434` → 컨테이너 `5432`, 이름 있는 볼륨, `pg_isready` 상태 확인. `POSTGRES_DB/USER/PASSWORD`는 `.env`의 `DB_NAME/DB_USERNAME/DB_PASSWORD`로 채운다.
 - Compose `backend`: `./backend`를 빌드, `env_file: .env`, `DB_URL`만 `jdbc:postgresql://db:5432/${DB_NAME}`로 덮어쓴다, `db`가 건강해진 뒤 시작, `8080` 공개.
 - `Dockerfile`: 2단계. `eclipse-temurin:21-jdk`에서 `./gradlew bootJar -x test`, `eclipse-temurin:21-jre`에서 실행.
 - `Makefile`: `make test` = `docker compose up -d --wait db` 후 `cd backend && ./gradlew test`. `make lint` = `cd frontend && npm run lint && npm run build`.
 
 **완료 기준**
-- [ ] `.env.example`에 위 이름이 모두 있고 값은 비어 있다 (`grep -c '=$' .env.example`이 이름 수와 같다)
+- [ ] `.env.example`에 위 이름이 모두 있고 값은 비어 있다. 필수 6개(DB·JWT)는 `이름=`, 선택 8개(OpenAI·구글·카카오)는 `# 이름=`로 주석 처리 (빈 값 줄이 있으면 기본값이 무시되어 앱이 시작하지 못하므로)
 - [ ] `make db` 후 `docker compose ps db`가 `healthy`다
 - [ ] `.env`에 DB·JWT 값만 채운 상태에서 `make test`를 돌리면 지금 있는 테스트가 모두 통과한다(이 트랙은 테스트 내용을 고치지 않는다)
 - [ ] `make up` 후 `curl -s -o /dev/null -w '%{http_code}' localhost:8080/api/auth/me`가 `401`이다
