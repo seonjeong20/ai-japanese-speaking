@@ -300,4 +300,6 @@ Coding Agent는 구현 편의를 이유로 계약을 임의 변경하지 않는�
 - 별도 Python AI Server
 - Message Queue
 
-Docker는 백엔드 배포(Render)와 로컬 개발 환경(Docker Compose)에 채택했다(decisions.md 2026-11-03 "Docker 도입"). Compose 구성은 개발 계획에서 정한다.
+Docker는 백엔드 배포(Render)와 로컬 개발 환경(Docker Compose)에 채택했다(decisions.md 2026-11-03 "Docker 도입"). Compose에는 DB와 백엔드를 넣는다.
+
+`spring-boot-starter-oauth2-client`는 구글·카카오 코드 교환과 사용자 정보 조회에만 채택했다. 기본 로그인 흐름(`oauth2Login`)은 켜지 않는다(decisions.md 2026-11-03 "계정 전환의 기술 선택").

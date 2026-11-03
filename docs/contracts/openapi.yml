@@ -92,15 +92,56 @@ paths:
                 $ref: '#/components/schemas/User'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  # NOTE: /api/users/me(GET), /api/users/me/preferences는 아직 백엔드에 구현되어 있지 않아 문서에 두지 않는다
-  # (이슈 #3). 로그인 사용자 정보는 /api/auth/me로 조회한다. 비밀번호 변경 API는 소셜 로그인 전환으로 없앴다.
+  # NOTE: 설정 화면의 계정 정보는 /api/auth/me로 조회한다(별도 GET /api/users/me는 두지 않는다).
+  # 비밀번호 변경 API는 소셜 로그인 전환으로 없앴다. 설정 흐름과 테스트케이스는 docs/specs/settings.md.
+  /api/users/me/preferences:
+    get:
+      tags: [Users]
+      summary: 학습 기본값 조회
+      description: 저장한 적이 없으면 INTERMEDIATE, JAPANESE_KOREAN을 돌려주고 DB에 행을 만들지 않는다.
+      operationId: getMyPreferences
+      responses:
+        '200':
+          description: 기본값
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Users]
+      summary: 학습 기본값 저장
+      description: 사용자당 한 행을 만들거나 고친다. 이미 만든 세션의 설정은 바꾸지 않는다.
+      operationId: updateMyPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserPreferencesRequest'
+      responses:
+        '200':
+          description: 저장 완료. message는 "설정이 저장되었습니다."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '400':
+          description: 값이 없거나 허용되지 않은 값 (INVALID_REQUEST)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/users/me:
     delete:
       tags: [Users]
       summary: 회원 탈퇴
       description: |
         현재 사용자의 계정과 학습 기록(Speaking 세션, 메시지, 피드백, 설정)을 모두 삭제한다.
-        삭제 전에 제공자 연결을 끊는다(카카오 연결 끊기, 구글 권한 철회). 연결 끊기가 실패해도
+        카카오 가입자는 삭제 전에 카카오 연결을 끊는다(앱 관리자 키 사용). 구글은 토큰을 저장하지 않아 철회하지 않는다. 연결 끊기가 실패해도
         우리 쪽 데이터는 삭제하고 탈퇴를 끝낸다(decisions.md 2026-11-03). 같은 소셜 계정으로 다시 가입하면 새 계정이 된다.
       operationId: deleteMe
       responses:
@@ -621,6 +662,14 @@ components:
           $ref: '#/components/schemas/SubtitleMode'
         message:
           type: string
+    UpdateUserPreferencesRequest:
+      type: object
+      required: [defaultDifficulty, defaultSubtitleMode]
+      properties:
+        defaultDifficulty:
+          $ref: '#/components/schemas/Difficulty'
+        defaultSubtitleMode:
+          $ref: '#/components/schemas/SubtitleMode'
     SpeakingSession:
       type: object
       required: [sessionId, sessionType, status, startedAt]
