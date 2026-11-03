@@ -14,13 +14,11 @@ const NAV_ITEMS = [
   { label: 'Settings', to: '/settings', icon: SettingsIcon, implemented: true, matchPaths: ['/settings'] },
 ]
 
-// `items`/`profile`을 넘기지 않으면 기존 Learner Sidebar와 완전히 동일하게 동작합니다.
-// Manager 등 다른 역할의 Sidebar가 필요하면 이 두 prop만 다르게 넘겨서 재사용합니다.
-function Sidebar({ items = NAV_ITEMS, profile }) {
+function Sidebar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const loggedInUser = getCurrentUser()
-  const profileInfo = profile ?? {
+  const profileInfo = {
     name: loggedInUser?.name ?? '',
     initial: loggedInUser?.name ? loggedInUser.name.charAt(0) : '',
   }
@@ -40,7 +38,7 @@ function Sidebar({ items = NAV_ITEMS, profile }) {
       </div>
 
       <nav className="sidebar-nav">
-        {items.map(({ label, to, icon: Icon, implemented, matchPaths }) => {
+        {NAV_ITEMS.map(({ label, to, icon: Icon, implemented, matchPaths }) => {
           const isActive = matchPaths.some((path) => pathname.startsWith(path))
           const className = `sidebar-nav__item${isActive ? ' sidebar-nav__item--active' : ''}`
 
