@@ -107,6 +107,8 @@ function SettingsPage() {
   const [draftSettings, setDraftSettings] = useState(defaultSpeakingSettings)
   const [isPreferencesLoading, setPreferencesLoading] = useState(true)
   const [preferencesLoadError, setPreferencesLoadError] = useState('')
+  // [다시 불러오기]를 누를 때마다 1씩 올려 기본값 조회를 다시 실행합니다.
+  const [preferencesRequestId, setPreferencesRequestId] = useState(0)
   const [isSaving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
@@ -139,6 +141,7 @@ function SettingsPage() {
   }, [])
 
   // 불러오는 동안에는 선택 칸을 보여 주지 않으므로, 늦게 온 응답이 사용자가 고른 값을 덮어쓰지 않습니다.
+  // 불러오지 못하면 저장된 값을 모르는 채로 덮어쓰지 않도록 선택 칸과 [설정 저장]을 막고 [다시 불러오기]만 둡니다.
   useEffect(() => {
     let ignore = false
     getPreferences()
@@ -153,9 +156,7 @@ function SettingsPage() {
       })
       .catch((error) => {
         if (ignore) return
-        setPreferencesLoadError(
-          `${error.message || '저장한 기본값을 불러오지 못했습니다.'} 지금은 기본값(중급, 일본어 + 한국어)을 보여 주고 있어요.`,
-        )
+        setPreferencesLoadError(error.message || '저장한 기본 설정을 불러오지 못했습니다.')
       })
       .finally(() => {
         if (!ignore) setPreferencesLoading(false)
@@ -163,7 +164,13 @@ function SettingsPage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [preferencesRequestId])
+
+  const retryLoadPreferences = () => {
+    setPreferencesLoadError('')
+    setPreferencesLoading(true)
+    setPreferencesRequestId((id) => id + 1)
+  }
 
   const updateDraft = (key, value) => {
     setDraftSettings((prev) => ({ ...prev, [key]: value }))
@@ -187,7 +194,6 @@ function SettingsPage() {
       }
       setSavedSettings(next)
       setDraftSettings(next)
-      setPreferencesLoadError('')
       setShowSuccess(true)
     } catch (error) {
       setSaveError(error.message || '설정을 저장하지 못했습니다. 다시 시도해 주세요.')
@@ -270,14 +276,18 @@ function SettingsPage() {
             <p className="settings-page__loading" role="status">
               기본 설정을 불러오는 중...
             </p>
+          ) : preferencesLoadError ? (
+            <div className="settings-page__load-error">
+              <p className="setup-page__error" role="alert">
+                {preferencesLoadError}
+              </p>
+              <button type="button" className="settings-page__retry-button" onClick={retryLoadPreferences}>
+                다시 불러오기
+              </button>
+            </div>
           ) : (
-            <>
-              {preferencesLoadError && (
-                <p className="setup-page__error" role="alert">
-                  {preferencesLoadError}
-                </p>
-              )}
-
+            // 저장하는 동안에는 fieldset의 disabled로 선택 칸(버튼)을 모두 막습니다.
+            <fieldset className="settings-page__fields" disabled={isSaving}>
               <SegmentedControl
                 label="기본 난이도"
                 options={DIFFICULTY_OPTIONS}
@@ -291,7 +301,7 @@ function SettingsPage() {
                 value={draftSettings.subtitleMode}
                 onChange={(value) => updateDraft('subtitleMode', value)}
               />
-            </>
+            </fieldset>
           )}
         </div>
 
@@ -300,7 +310,7 @@ function SettingsPage() {
             type="button"
             className="setup-page__cta settings-page__save-button"
             onClick={handleSave}
-            disabled={!isDirty || isSaving || isPreferencesLoading}
+            disabled={!isDirty || isSaving || isPreferencesLoading || Boolean(preferencesLoadError)}
           >
             {isSaving ? '저장하는 중...' : '설정 저장'}
           </button>

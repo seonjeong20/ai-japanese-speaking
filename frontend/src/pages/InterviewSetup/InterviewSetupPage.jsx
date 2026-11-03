@@ -32,6 +32,8 @@ function InterviewSetupPage() {
 
   // 화면을 연 뒤 사용자가 직접 고른 항목입니다. 기본값 응답이 늦게 와도 이 항목은 덮어쓰지 않습니다.
   const touchedRef = useRef(new Set())
+  // 기본값 조회가 끝날 때까지(성공이든 실패든) [시작]을 막습니다.
+  const [isPreferencesLoading, setPreferencesLoading] = useState(true)
 
   // 저장한 기본값(GET /api/users/me/preferences)으로 난이도·자막을 미리 채웁니다.
   // 불러오지 못하면 defaultSpeakingSettings(INTERMEDIATE, JAPANESE_KOREAN)를 그대로 씁니다.
@@ -53,6 +55,9 @@ function InterviewSetupPage() {
       .catch(() => {
         // 기본값을 쓰고 화면은 그대로 사용할 수 있게 둡니다.
       })
+      .finally(() => {
+        if (!ignore) setPreferencesLoading(false)
+      })
     return () => {
       ignore = true
     }
@@ -66,7 +71,7 @@ function InterviewSetupPage() {
   const handleBack = () => navigate('/learning')
 
   const handleStartInterview = async () => {
-    if (isStarting) return
+    if (isStarting || isPreferencesLoading) return
     if (!interviewSettings.job.trim()) {
       setErrorMessage('지원 직무를 입력해주세요.')
       return
@@ -144,9 +149,9 @@ function InterviewSetupPage() {
         )}
 
         <SetupCta
-          label={isStarting ? '시작하는 중...' : '면접 시작하기 →'}
+          label={isPreferencesLoading ? '기본 설정을 불러오는 중...' : isStarting ? '시작하는 중...' : '면접 시작하기 →'}
           onClick={handleStartInterview}
-          disabled={isStarting}
+          disabled={isStarting || isPreferencesLoading}
         />
       </div>
     </LearnerLayout>
