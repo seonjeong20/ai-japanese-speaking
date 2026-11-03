@@ -1,6 +1,6 @@
 # AI 일본어 Speaking 서비스: Backend Architecture
 
-기준일: 2026-09-09
+기준일: 2026-09-09 · B2C 전환 반영: 2026-11-03 (이전 B2B2C 버전은 태그 `v1.0-b2b2c`)
 
 이 문서는 백엔드 구현을 시작하기 전에 확정한 아키텍처 결정을 기록한다. 두 가지 목적을 동시에 가진다.
 
@@ -12,9 +12,11 @@
 - ERD/API 기준: [`erd-api-spec.md`](../contracts/erd-api-spec.md)
 - OpenAPI 명세: [`openapi.yml`](../contracts/openapi.yml)
 - 설계 의도 해설: [`design-study-notes.md`](../notes/design-study-notes.md)
-- ERD 원본: [`erd_v2.pdf`](erd_v2.pdf)
+- 기획: [`PRD.md`](../product/PRD.md), 결정 기록: [`decisions.md`](../decisions.md)
 
-이 문서와 위 문서가 충돌하면 위 문서(ERD/API/OpenAPI)가 우선한다. Coding Agent는 충돌을 발견하면 임의로 한쪽을 수정하지 않고 보고한다. (세부 규칙은 이후 `AGENTS.md`/`backend-rules.md`에서 정한다.)
+이 문서와 위 문서가 충돌하면 위 문서(ERD/API/OpenAPI)가 우선한다. Coding Agent는 충돌을 발견하면 임의로 한쪽을 수정하지 않고 보고한다. 세부 절차는 [`AGENTS.md`](../../AGENTS.md)와 [`backend-rules.md`](../rules/backend-rules.md)를 따른다.
+
+> **B2C 전환 중 상태 (2026-11-03)**: 이 문서와 계약 문서(ERD·OpenAPI)는 B2C 목표 구조로 개정했다(소셜 로그인, 역할 `LEARNER` 하나). **코드는 아직 B2B2C 상태**(이메일·비밀번호 가입, 기관 선택과 승인, 역할 3개)이며 개발 단계에서 계약에 맞춘다. 가입·로그인 흐름은 [계정 명세](../specs/account.md).
 
 ## 1. 프로젝트 개요
 
@@ -27,20 +29,77 @@ AI 기반 일본어 Speaking 학습 서비스다.
 - 일반 회화 피드백
 - 면접 답변 평가 및 꼬리질문
 - 학습 History
-- Learner / Manager / Admin 권한 구조
+
+개인 사용자가 바로 가입해 쓰는 B2C 서비스로 바꾼다. 기관·Manager·Admin 기능을 없앤다(decisions.md 2026-11-02 "B2C 기획 범위"). 현재 코드에는 아직 기관 선택·가입 승인(`AuthService`), 역할 3개(`UserRole`), Manager·Admin 화면이 남아 있다.
 
 전체 흐름:
 
+![전체 구조](images/architecture-overview.png)
+
+그림 원본: [`images/architecture-overview.drawio`](images/architecture-overview.drawio) (draw.io에서 열어 고칠 수 있다). 아래는 터미널에서 볼 때를 위한 같은 내용의 글자 그림이다.
+
 ```text
-React Frontend
-    ↓ REST API
-Spring Boot Backend
-    ├── Business Domains
-    ├── Spring AI
-    └── Speech (STT/TTS)
-    ↓              ↓
-PostgreSQL      External AI APIs
+[사용자 브라우저]
+      │  화면 요청, 로그인, 음성 녹음
+      ▼
+[Frontend: React + Vite]                 배포: Vercel
+      │  REST API + JWT
+      ▼
+[Backend: Spring Boot]                   배포: Render   (OpenAI API 키는 여기에만)
+      │  회원, 일반 회화, 면접 회화, 학습 기록
+      │                         │
+      │ 저장/조회                │ STT / LLM / TTS
+      ▼                         ▼
+[DB: PostgreSQL]  배포: Neon   [OpenAI]
 ```
+
+## 1.1 배포 구성
+
+**결정**: Frontend는 Vercel, Backend는 Render, DB는 Neon에 무료 범위로 배포한다(decisions.md 2026-11-02 "B2C 기획 범위").
+
+| 영역 | 배포처 | 비밀값 |
+|---|---|---|
+| Frontend (React) | Vercel | 없음. OpenAI API 키를 두지 않는다. Vite의 `VITE_` 환경변수는 빌드 결과에 포함되어 브라우저에서 보인다 |
+| Backend (Spring Boot) | Render (Docker 이미지. Render에 Java 기본 실행 환경이 없다) | OpenAI API 키, DB 접속 정보, JWT Secret. 개발 중에는 `.env`(decisions.md 2026-11-02 결정. Spring Boot가 `.env`를 읽는 방법은 개발 계획에서 정하며, 현재는 셸 환경변수를 읽는다), 배포 후에는 Render 환경변수 |
+| DB (PostgreSQL) | Neon | — |
+
+**주의**: 무료 Backend는 15분 동안 접속이 없으면 잠들어, Spring Boot가 다시 깨어날 때 30초 이상 걸릴 수 있다. 메모리는 약 512MB라 실제 배포에서 확인한다. 무료 조건은 바뀔 수 있으므로 배포 전에 각 서비스의 요금 페이지를 확인한다.
+
+## 1.2 음성 대화 한 턴의 흐름
+
+일반 회화에서 사용자가 한 번 말할 때의 흐름이다(`ConversationService.processAudioTurn`).
+
+![음성 대화 한 턴의 흐름](images/voice-turn-sequence.png)
+
+그림 원본: [`images/voice-turn-sequence.drawio`](images/voice-turn-sequence.drawio)
+
+```text
+[브라우저]  (1) 녹음한 음성
+    ▼
+[Frontend]
+    ▼
+[Backend] ──(1-1) 세션 잠금, 소유자·유형·진행 상태 확인 ──▶ [DB]
+    ├─(2) 음성 ───────────────────────────────▶ [OpenAI STT]
+    ◀──────────────────────────── 일본어 글자 ──┘
+    ├─(3) 최근 대화 10개 조회, 사용자 발화(글자) 저장 ──▶ [DB]
+    ├─(4) 회화 설정 + 최근 대화 + 사용자 발화 ──▶ [OpenAI LLM]
+    │   ◀──────────────── AI 대답(일본어 + 한국어 자막) ─┘
+    ├─(5) AI 대답(글자) 저장 ──────────────────────▶ [DB]
+    ├─(6) AI 대답 글자 ───────────────────────────▶ [OpenAI TTS]
+    │   ◀──────────────────────────────── AI 음성 ─┘
+    ▼
+[Frontend] (7) 사용자 발화 글자, AI 대답, 자막, AI 음성
+    ▼
+[브라우저] (8) AI 음성 재생
+```
+
+- STT를 부르기 전에 세션을 잠그고 현재 사용자의 진행 중인 일반 회화 세션인지 확인한다(`loadOwnedInProgressSession`). 확인에 실패하면 OpenAI를 부르지 않는다.
+- 음성은 DB에 저장하지 않는다. 사용자 발화와 AI 대답의 글자만 저장한다.
+- 한 턴(`processAudioTurn`) 전체가 하나의 트랜잭션이다. (6) TTS가 실패하면 (3)·(5)의 저장도 취소된다.
+- 한 턴에 OpenAI를 세 번 호출한다(STT, LLM, TTS). 응답 대기 시간에는 이 세 호출 외에도 DB 처리, 응답 전송, 브라우저의 음성 재생 준비가 포함된다.
+- LLM은 최근 대화 10개를 함께 받아 맥락을 유지한다.
+- 회화 피드백은 대화가 끝난 뒤 DB에 쌓인 발화 글자로 따로 생성한다.
+- PRD 8장의 개선 범위와 연결: 받아쓰기 개선은 (2), 대화 상대 AI 개선은 (4), 회화 피드백 개선은 대화 종료 후 피드백 생성 단계다.
 
 ## 2. Backend Architecture: Modular Monolith
 
@@ -63,13 +122,10 @@ backend/
 └── src/main/java/.../
     ├── auth/
     ├── user/
-    ├── organization/
     ├── speaking/
     ├── conversation/
     ├── interview/
     ├── history/
-    ├── manager/
-    ├── admin/
     ├── ai/
     └── speech/
 ```
@@ -139,7 +195,7 @@ PostgreSQL Table
 
 **결정**: 기존 ERD를 Database Contract의 기준으로 사용한다. ERD에 없는 Entity/Table/Column을 구현 단계에서 임의로 추가하지 않는다.
 
-**왜**: ERD([`erd-api-spec.md`](../contracts/erd-api-spec.md) 2장, [`erd_v2.pdf`](erd_v2.pdf))는 이미 여러 차례 논의를 거쳐 14개 테이블·관계·제약으로 확정된 계약이다. Coding Agent가 편의상 컬럼이나 테이블을 추가하면 ERD와 실제 스키마가 어긋나고, 이후 어느 쪽이 진실인지 알 수 없게 된다.
+**왜**: ERD([`erd-api-spec.md`](../contracts/erd-api-spec.md) 2장, [`erd.dbml`](../contracts/erd.dbml))는 여러 차례 논의를 거쳐 테이블·관계·제약으로 확정한 계약이다. Coding Agent가 편의상 컬럼이나 테이블을 추가하면 ERD와 실제 스키마가 어긋나고, 이후 어느 쪽이 진실인지 알 수 없게 된다.
 
 초기 개발에서는 JPA/Hibernate의 schema 생성 기능(`ddl-auto` 등)을 활용할 수 있지만, 최종적으로는 ERD ↔ Entity ↔ 실제 PostgreSQL schema가 일치하는지 검증한다.
 
@@ -177,17 +233,15 @@ Conversation  Interview
 
 > **Coding Agent 주의**: `history/` 패키지에는 자체 Entity/Repository를 만들지 않는다. `history/service`는 다른 도메인의 Repository(또는 조회용 Query)를 조합해 응답 DTO를 구성하는 역할만 한다.
 
-## 9. Manager / Admin: 별도 Entity가 아니라 Role
+## 9. 사용자 역할
 
-**결정**: Manager와 Admin은 별도의 Entity가 아니다. 모두 `users` 테이블의 User이며 `role`로 구분한다.
+**결정**: 사용자 역할(`users.role`) 칸은 남기고 값은 `LEARNER` 하나만 쓴다. B2B2C 버전의 `MANAGER`, `ADMIN`과 기관(Organization)은 없앤다(decisions.md 2026-11-03 "B2C 명세: 사용자 역할").
 
 ```text
-User.role: LEARNER | MANAGER | ADMIN
+User.role: LEARNER
 ```
 
-**왜**: 세 역할 모두 로그인 계정으로서 이름·이메일·비밀번호·조직 소속 등 동일한 속성을 공유한다. 별도 Entity로 나누면 인증/조회 로직을 역할별로 중복 구현해야 한다.
-
-`manager/`, `admin/` 패키지는 별도의 데이터 모델을 의미하는 것이 아니라, 각 역할의 관리 Use Case(승인, 비활성화, 집계 조회 등)를 구성하기 위한 application/domain 기능 경계다.
+**왜**: 이번 범위가 기존 기능 수정부터라 바꿀 곳이 적은 쪽을 골랐다. 나중에 운영자 기능이 생기면 값만 추가하면 된다.
 
 ## 10. Authentication / Authorization
 
@@ -205,16 +259,16 @@ React → POST /api/auth/login → Spring Security → JWT 발급
 
 **왜**: 클라이언트가 보낸 `userId`를 그대로 신뢰하면 다른 사용자의 세션·데이터에 접근하는 권한 우회가 가능해진다. ([`erd-api-spec.md`](../contracts/erd-api-spec.md) 1장에도 명시된 정책이다.)
 
-Role: `LEARNER` / `MANAGER` / `ADMIN`
+Role: `LEARNER`
 
-**결정**: Role 검증과 Business Authorization을 구분한다.
+**결정**: 인증(로그인했는가)과 소유권 확인(이 데이터가 로그인한 사용자의 것인가)을 구분한다.
 
 | 구분 | 질문 예시 | 책임 위치 |
 |---|---|---|
-| Role 검증 | "현재 사용자가 MANAGER인가?" | Spring Security |
-| Business Authorization | "이 Learner가 현재 Manager와 같은 Organization 소속인가?" | Service |
+| 인증 | "유효한 JWT로 로그인한 사용자인가?" | Spring Security |
+| 소유권 확인 | "이 Speaking 세션이 현재 사용자의 것인가?" | Service (예: `loadOwnedInProgressSession`) |
 
-**왜**: Role만으로는 "같은 기관 소속인지" 같은 도메인 규칙을 표현할 수 없다. Manager는 자신의 Organization에 속한 Learner만 관리할 수 있다는 규칙은 Spring Security의 정적 Role 체크가 아니라 Service의 도메인 로직에서 검증한다.
+**왜**: 로그인 여부만으로는 다른 사용자의 세션에 접근하는 것을 막을 수 없다. 세션·기록이 현재 사용자의 것인지는 Service의 도메인 로직에서 확인한다.
 
 ## 11. API Contract: OpenAPI-first
 
@@ -222,7 +276,7 @@ Role: `LEARNER` / `MANAGER` / `ADMIN`
 
 **왜**: 프론트엔드가 이미 이 계약을 기준으로 화면을 구현했다([`erd-api-spec.md`](../contracts/erd-api-spec.md) 9장 "프론트-ERD 대조" 참고). 백엔드가 임의로 계약을 바꾸면 프론트와 어긋난다.
 
-OpenAPI와 구현 요구가 충돌할 경우 Coding Agent가 임의로 수정하지 않고 보고하도록, 별도 `AGENTS.md`/`backend-rules.md`에서 규칙화할 예정이다. (이 문서 시점에는 아직 해당 파일이 없다.)
+OpenAPI와 구현 요구가 충돌하면 Coding Agent는 임의로 수정하지 않고 보고한다. 절차는 [`AGENTS.md`](../../AGENTS.md) 6장과 [`backend-rules.md`](../rules/backend-rules.md) 10장을 따른다.
 
 ## 12. AI Architecture
 
@@ -306,7 +360,7 @@ speech/
 └── tts/
 ```
 
-> 구체적인 STT/TTS Provider는 아직 확정하지 않았다. 이 문서에서 특정 서비스를 선택하지 않는다.
+현재 구현은 OpenAI를 쓴다: STT `gpt-4o-mini-transcribe`, TTS `gpt-4o-mini-tts`, LLM `gpt-4o-mini`(README "Tech Stack", 코드 기준). B2C 개선에서 STT는 말하다 취소한 말, 작은 목소리, 문법적으로 틀린 말도 고치지 않고 들은 그대로 받아 적어야 한다(PRD 8.3장). 모델·설정 선택은 받아쓰기 개선 명세에서 정한다.
 
 ## 15. Architecture Principles
 
@@ -319,7 +373,7 @@ speech/
 - ERD 기반 Database contract
 - Spring Data JPA
 - PostgreSQL
-- Spring Security + JWT, Role 검증과 Business Authorization 구분
+- Spring Security + JWT, 인증과 소유권 확인 구분 (Role은 `LEARNER` 하나)
 - Spring AI, 도메인 AI 로직과 외부 AI Client 분리
 - Speech(STT/TTS) 책임과 LLM 책임 분리
 - MVP는 단순하게 유지하되 확장 지점은 보존 (동기 처리 + `generation_status` 구조)

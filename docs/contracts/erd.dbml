@@ -1,83 +1,70 @@
 // ======================================================
 // AI Japanese Speaking Service
+// B2C 전환 반영: 2026-11-03 (이전 B2B2C 버전은 태그 v1.0-b2b2c)
+// 근거: docs/decisions.md 2026-11-03 "소셜 로그인", "사용자 역할", docs/specs/account.md
 // ======================================================
 
 
 // ======================================================
-// 1. Organization
-// ======================================================
-
-Table organizations {
-  id bigint [pk, increment]
-
-  name varchar(100) [not null]
-  status varchar(20) [not null, default: 'ACTIVE']
-
-  created_at timestamp [not null]
-  updated_at timestamp
-
-  Note: '''
-  기업/기관 정보
-
-  status:
-  ACTIVE
-  INACTIVE
-  '''
-}
-
-
-// ======================================================
-// 2. User
+// 1. User
 // ======================================================
 
 Table users {
   id bigint [pk, increment]
 
-  organization_id bigint
+  provider varchar(20) [not null]
+  provider_user_id varchar(255) [not null]
 
   name varchar(50) [not null]
   email varchar(255) [not null, unique]
-  password_hash varchar(255) [not null]
 
-  department varchar(100)
-
-  role varchar(20) [not null]
-  status varchar(20) [not null, default: 'PENDING']
+  role varchar(20) [not null, default: 'LEARNER']
+  status varchar(20) [not null, default: 'ACTIVE']
 
   created_at timestamp [not null]
   updated_at timestamp
   last_login_at timestamp
 
+  indexes {
+    (provider, provider_user_id) [unique]
+  }
+
   Note: '''
-  전체 사용자
+  전체 사용자 (B2C, 소셜 로그인만)
+
+  provider:
+  GOOGLE
+  KAKAO
+
+  provider_user_id:
+  제공자의 바뀌지 않는 고유 ID (구글 sub, 카카오 회원번호)
+  계정은 (provider, provider_user_id)로 구분한다
+
+  email:
+  가입할 때 받은 인증된 이메일. 같은 이메일 가입을 막는 확인용
+  (다른 provider라도 같은 이메일이면 가입 불가)
+
+  name, email:
+  가입할 때 값으로 고정. 제공자 쪽에서 바뀌어도 갱신하지 않음
+
+  비밀번호를 저장하지 않는다
 
   role:
   LEARNER
-  MANAGER
-  ADMIN
 
   status:
-  PENDING
   ACTIVE
-  REJECTED
-  INACTIVE
 
-  LEARNER:
-  소속 기관 Manager의 승인 필요
-
-  MANAGER:
-  System Admin의 승인 필요
-
-  ADMIN:
-  회원가입 없음
-  DB에 직접 생성
+  탈퇴:
+  사용자를 삭제하면 그 사용자의 user_preferences, speaking_sessions와
+  세션에 딸린 모든 데이터(설정, 메시지, 피드백, 교정, 면접 질문·답변·평가)를 함께 삭제한다
+  (삭제 방식은 구현에서 정한다: DB cascade 또는 서비스에서 순서대로 삭제)
   '''
 }
 
-Ref: users.organization_id > organizations.id
 
 // ======================================================
-// 3. user_preferences
+// 2. user_preferences
 // ======================================================
 
 Table user_preferences {
@@ -95,7 +82,7 @@ Table user_preferences {
 Ref: user_preferences.user_id > users.id
 
 // ======================================================
-// 4. Speaking Session
+// 3. Speaking Session
 // ======================================================
 
 Table speaking_sessions {
@@ -125,7 +112,7 @@ Table speaking_sessions {
   COMPLETED
   ABORTED
 
-  Dashboard / History / Manager 통계의
+  Dashboard / History 통계의
   기본 집계 데이터로 사용
   '''
 }
@@ -134,7 +121,7 @@ Ref: speaking_sessions.user_id > users.id
 
 
 // ======================================================
-// 5. Conversation Settings
+// 4. Conversation Settings
 // ======================================================
 
 Table conversation_settings {
@@ -172,7 +159,7 @@ Ref: conversation_settings.session_id > speaking_sessions.id
 
 
 // ======================================================
-// 6. Interview Settings
+// 5. Interview Settings
 // ======================================================
 
 Table interview_settings {
@@ -210,7 +197,7 @@ Ref: interview_settings.session_id > speaking_sessions.id
 
 
 // ======================================================
-// 7. Speaking Messages
+// 6. Speaking Messages
 // ======================================================
 
 Table speaking_messages {
@@ -252,7 +239,7 @@ Ref: speaking_messages.session_id > speaking_sessions.id
 
 
 // ======================================================
-// 8. Conversation Feedback
+// 7. Conversation Feedback
 // ======================================================
 
 Table conversation_feedbacks {
@@ -297,7 +284,7 @@ Ref: conversation_feedbacks.session_id > speaking_sessions.id
 
 
 // ======================================================
-// 9. Conversation Corrections
+// 8. Conversation Corrections
 // ======================================================
 
 Table conversation_corrections {
@@ -338,7 +325,7 @@ Ref: conversation_corrections.message_id > speaking_messages.id
 
 
 // ======================================================
-// 10. Interview Questions
+// 9. Interview Questions
 // ======================================================
 
 Table interview_questions {
@@ -394,7 +381,7 @@ Ref: interview_questions.parent_question_id > interview_questions.id
 
 
 // ======================================================
-// 11. Interview Answers
+// 10. Interview Answers
 // ======================================================
 
 Table interview_answers {
@@ -419,7 +406,7 @@ Ref: interview_questions.source_answer_id > interview_answers.id
 
 
 // ======================================================
-// 12. Interview Answer Feedback
+// 11. Interview Answer Feedback
 // ======================================================
 
 Table interview_answer_feedbacks {
@@ -468,7 +455,7 @@ Ref: interview_answer_feedbacks.answer_id > interview_answers.id
 
 
 // ======================================================
-// 13. Interview Evaluation Scores
+// 12. Interview Evaluation Scores
 // ======================================================
 
 Table interview_evaluation_scores {
@@ -512,7 +499,7 @@ Ref: interview_evaluation_scores.answer_feedback_id > interview_answer_feedbacks
 
 
 // ======================================================
-// 14. Interview Overall Feedback
+// 13. Interview Overall Feedback
 // ======================================================
 
 Table interview_feedbacks {
