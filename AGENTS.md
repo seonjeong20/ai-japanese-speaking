@@ -11,11 +11,13 @@
 작업 시작 전 아래 순서로 관련 문서를 확인한다.
 
 1. `AGENTS.md` (이 문서)
-2. [`docs/architecture/architecture.md`](docs/architecture/architecture.md) — 전체 아키텍처와 설계 결정
-3. [`docs/rules/backend-rules.md`](docs/rules/backend-rules.md) — Spring Boot 구현 규칙
-4. 작업과 관련된 ERD/API specification ([`docs/contracts/erd-api-spec.md`](docs/contracts/erd-api-spec.md)) — 데이터 모델과 기능/API 설계 기준
-5. [`docs/contracts/openapi.yml`](docs/contracts/openapi.yml) — API endpoint, Request/Response, Enum 등의 API Contract
-6. 현재 구현 코드 — 위 계약을 실제로 구현한 결과물
+2. [`docs/product/PRD.md`](docs/product/PRD.md), [`docs/decisions.md`](docs/decisions.md) — 무엇을 왜 만드는지, 결정과 이유
+3. [`docs/architecture/architecture.md`](docs/architecture/architecture.md) — 전체 아키텍처와 설계 결정
+4. [`docs/rules/backend-rules.md`](docs/rules/backend-rules.md) — Spring Boot 구현 규칙
+5. 작업과 관련된 ERD/API specification ([`docs/contracts/erd-api-spec.md`](docs/contracts/erd-api-spec.md)) — 데이터 모델과 기능/API 설계 기준
+6. [`docs/contracts/openapi.yml`](docs/contracts/openapi.yml) — API endpoint, Request/Response, Enum 등의 API Contract
+7. 작업과 관련된 기능 명세 ([`docs/specs/`](docs/specs/)) — 흐름, 유스케이스, 테스트케이스
+8. 현재 구현 코드 — 위 계약을 실제로 구현한 결과물
 
 문서와 코드가 충돌하거나 문서끼리 충돌하면 Coding Agent가 임의로 어느 한쪽을 선택해 수정하지 않는다. 불일치를 보고하고 사람의 결정을 기다린다.
 

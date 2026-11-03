@@ -32,7 +32,7 @@
 
 책임: Business Logic, Transaction 관리, 도메인 규칙 검증, Business Authorization, Repository 호출, Entity ↔ DTO 변환에 필요한 orchestration.
 
-기관 소속 확인처럼 데이터와 도메인 규칙이 필요한 권한 검증은 Service에서 처리한다.
+세션 소유자 확인처럼 데이터와 도메인 규칙이 필요한 권한 검증은 Service에서 처리한다.
 
 ### Repository
 
@@ -82,7 +82,7 @@ Java Enum은 DB에 문자열로 저장한다.
 
 기본 규칙: `@Enumerated(EnumType.STRING)` 사용. `EnumType.ORDINAL`은 사용하지 않는다.
 
-예: `LEARNER`/`MANAGER`/`ADMIN`, `PENDING`/`ACTIVE`/`REJECTED`/`INACTIVE`, `BEGINNER`/`INTERMEDIATE`/`ADVANCED` 등 기존 ERD/OpenAPI에 정의된 enum 값을 그대로 사용한다.
+예: `LEARNER`, `ACTIVE`, `GOOGLE`/`KAKAO`, `BEGINNER`/`INTERMEDIATE`/`ADVANCED` 등 기존 ERD/OpenAPI에 정의된 enum 값을 그대로 사용한다.
 
 규칙:
 - enum 이름을 임의로 변경하지 않는다.
@@ -119,7 +119,7 @@ Validation을 두 종류로 구분한다.
 
 ### Business Validation — Service
 
-예: 이미 가입된 이메일인가? 선택한 Organization이 ACTIVE인가? 해당 Learner가 Manager와 같은 Organization인가? 현재 상태에서 해당 작업이 가능한가?
+예: 같은 이메일로 다른 제공자 계정이 이미 있는가? 이메일이 인증되었는가? 이 세션이 현재 사용자의 것인가? 현재 상태에서 해당 작업이 가능한가?
 
 원칙: 형식 검증 → DTO Validation / 비즈니스 규칙 검증 → Service
 
@@ -146,11 +146,12 @@ API Error Response의 정확한 구조는 기존 OpenAPI의 `ErrorResponse` Sche
 
 Spring Security + JWT를 사용한다.
 
-### Password
+### Social Login
 
-- 비밀번호 평문 저장 금지.
-- `PasswordEncoder`를 사용해 hash한 값만 DB에 저장한다.
-- 로그 등에 password를 출력하지 않는다.
+- 가입·로그인은 구글·카카오 소셜 로그인만 쓴다. 비밀번호를 저장하지 않는다(decisions.md 2026-11-03 "소셜 로그인").
+- 계정은 (provider, provider_user_id)로 찾는다. 이메일로 계정을 찾지 않는다.
+- 제공자에게서 받은 인가 코드, 액세스 토큰, Client Secret을 로그에 출력하지 않는다.
+- 세부 규칙과 테스트케이스는 [계정 명세](../specs/account.md)를 따른다.
 
 ### Authenticated User
 
@@ -162,12 +163,12 @@ Spring Security + JWT를 사용한다.
 
 ### Authorization
 
-- Role 기반 접근 제어(`LEARNER`/`MANAGER`/`ADMIN`) → Spring Security
-- Business Authorization(예: Manager가 자신의 Organization에 속한 Learner만 관리할 수 있는지 확인) → Service
+- 인증(유효한 JWT인가, 역할 `LEARNER`) → Spring Security
+- 소유권 확인(예: 이 세션이 현재 사용자의 것인지) → Service
 
 ### Secrets
 
-다음을 소스 코드에 하드코딩하지 않는다: JWT Secret, LLM API Key, STT/TTS API Key, Database Password, 기타 Secret. 환경 설정/환경 변수를 통해 주입한다.
+다음을 소스 코드에 하드코딩하지 않는다: JWT Secret, LLM API Key, STT/TTS API Key, Database Password, 구글·카카오 OAuth Client Secret, 기타 Secret. 환경 설정/환경 변수를 통해 주입한다.
 
 아직 확정하지 않은 다음 정책은 이 문서에서 임의로 결정하지 않는다. 구현 직전에 별도로 결정한다.
 - JWT 만료 시간
@@ -206,7 +207,7 @@ Coding Agent는 임의로 다음을 변경하지 않는다: Endpoint, HTTP Metho
 
 ## 11. Database Contract Rules
 
-기존 ERD([`erd-api-spec.md`](../contracts/erd-api-spec.md), [`erd_v2.pdf`](erd_v2.pdf))가 Database Contract의 기준이다.
+기존 ERD([`erd-api-spec.md`](../contracts/erd-api-spec.md), [`erd.dbml`](../contracts/erd.dbml))가 Database Contract의 기준이다.
 
 Coding Agent는 임의로 다음을 변경하지 않는다: Table 추가/삭제, Column 추가/삭제, Column 의미 변경, FK 변경, Unique Constraint 변경, Enum 의미 변경, Role/Status 데이터 정책 변경.
 
