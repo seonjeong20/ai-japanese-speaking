@@ -14,7 +14,9 @@
 | ERD와 API 설계 기준 | [contracts/erd-api-spec.md](contracts/erd-api-spec.md) | |
 | API 계약 | [contracts/openapi.yml](contracts/openapi.yml) | |
 | ERD 원본 (DBML) | [contracts/erd.dbml](contracts/erd.dbml) | |
-| 기능 명세 (흐름·유스케이스·테스트케이스) | [specs/](specs/) | [account.md](specs/account.md): 소셜 로그인·회원 탈퇴 |
+| 기능 명세 (흐름·유스케이스·테스트케이스) | [specs/](specs/) | [account.md](specs/account.md): 소셜 로그인·회원 탈퇴, [settings.md](specs/settings.md): 설정 화면 |
+| 개발 계획 (트랙·소유권·완료 기준) | [plan.md](plan.md) | 사람이 승인한 뒤 오케스트레이터가 따른다 |
+| 인수인계 (현재 상태·다음 행동) | [handoff.md](handoff.md) | 자동 개발의 시작점 |
 
 계약 문서(ERD·OpenAPI)와 설계 문서가 충돌하면 계약 문서가 우선한다. 작업 절차와 문서 우선순위는 [AGENTS.md](../AGENTS.md)를 따른다.
 

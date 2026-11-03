@@ -308,9 +308,9 @@ B2C 근거: [decisions.md](../decisions.md) 2026-11-03 "소셜 로그인", "사�
 |---|---|---|
 | POST | /api/auth/oauth/{provider} | 공개: 소셜 로그인(가입 겸 로그인). provider는 google / kakao |
 | GET | /api/auth/me | 로그인 상태·권한 |
-| GET | /api/users/me | 내 계정 (미구현, 이슈 #3) |
-| GET | /api/users/me/preferences | 기본 설정 (미구현, 이슈 #3) |
-| PATCH | /api/users/me/preferences | 기본 설정 변경 (미구현, 이슈 #3) |
+| GET | /api/users/me | 두지 않는다. 계정 정보는 /api/auth/me |
+| GET | /api/users/me/preferences | 기본 설정. 저장한 적이 없으면 INTERMEDIATE, JAPANESE_KOREAN (이슈 #3, 이번 범위) |
+| PATCH | /api/users/me/preferences | 기본 설정 저장. 두 값 모두 필수 (이슈 #3, 이번 범위) |
 | DELETE | /api/users/me | 회원 탈퇴 |
 | GET | /api/speaking/sessions/{sessionId} | 내 세션 공통 정보 |
 | POST | /api/conversations | 일반회화 시작 |
@@ -400,7 +400,7 @@ B2C 근거: [decisions.md](../decisions.md) 2026-11-03 "소셜 로그인", "사�
 
 ### GET /api/users/me
 
-Settings에서 사용할 계정 정보. 기본 응답은 위 /auth/me와 같은 id, name, email, provider, role, status다. 아직 구현되지 않았다(이슈 #3).
+두지 않는다. 설정 화면의 계정 정보는 `GET /api/auth/me`로 조회한다(docs/specs/settings.md).
 
 ### GET /api/users/me/preferences
 
@@ -443,7 +443,7 @@ user_preferences만 변경하며 이미 생성된 세션 settings를 수정하�
 
 회원 탈퇴. 요청 본문은 없고 성공하면 204를 돌려준다.
 
-- 제공자 연결을 끊는다(카카오 연결 끊기, 구글 권한 철회). 연결 끊기가 실패해도 우리 쪽 데이터는 삭제하고 탈퇴를 끝낸다.
+- 카카오 가입자는 카카오 연결을 끊는다(앱 관리자 키 사용). 구글은 토큰을 저장하지 않아 권한 철회를 하지 않고, 화면에서 구글 계정 설정에서 직접 끊도록 안내한다. 연결 끊기가 실패해도 우리 쪽 데이터는 삭제하고 탈퇴를 끝낸다.
 - 계정과 학습 기록(Speaking 세션, 메시지, 피드백, 교정, 면접 질문·답변·평가, 설정)을 모두 삭제한다.
 - 같은 소셜 계정으로 다시 가입하면 새 계정이 된다.
 
