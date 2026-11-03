@@ -93,7 +93,7 @@
 - [ ] `.env.example`에 위 이름이 모두 있고 값은 비어 있다. 필수 6개(DB·JWT)는 `이름=`, 선택 8개(OpenAI·구글·카카오)는 `# 이름=`로 주석 처리 (빈 값 줄이 있으면 기본값이 무시되어 앱이 시작하지 못하므로)
 - [ ] `make db` 후 `docker compose ps db`가 `healthy`다
 - [ ] `.env`에 DB·JWT 값만 채운 상태에서 `make test`를 돌리면 지금 있는 테스트가 모두 통과한다(이 트랙은 테스트 내용을 고치지 않는다)
-- [ ] `make up` 후 `curl -s -o /dev/null -w '%{http_code}' localhost:8080/api/auth/me`가 `401`이다
+- [ ] `make up` 후 `curl -s -o /dev/null -w '%{http_code}' localhost:8080/api/auth/me`가 `401`이다 (백엔드에 상태 확인이 없어 뜨는 데 몇 초 걸리므로 20초까지 2초 간격으로 다시 시도)
 - [ ] `git status`에 `.env`가 나타나지 않는다
 
 ---
