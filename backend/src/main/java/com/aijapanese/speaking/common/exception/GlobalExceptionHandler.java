@@ -1,6 +1,11 @@
 package com.aijapanese.speaking.common.exception;
 
 import com.aijapanese.speaking.ai.AiServiceException;
+import com.aijapanese.speaking.auth.exception.EmailAlreadyRegisteredException;
+import com.aijapanese.speaking.auth.exception.EmailNotVerifiedException;
+import com.aijapanese.speaking.auth.exception.InvalidAuthorizationCodeException;
+import com.aijapanese.speaking.auth.exception.OAuthProviderException;
+import com.aijapanese.speaking.common.dto.EmailAlreadyRegisteredErrorResponse;
 import com.aijapanese.speaking.common.dto.ErrorResponse;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
 import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
@@ -17,9 +22,37 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(InvalidAuthorizationCodeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidAuthorizationCode(InvalidAuthorizationCodeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_AUTHORIZATION_CODE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("EMAIL_NOT_VERIFIED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ResponseEntity<EmailAlreadyRegisteredErrorResponse> handleEmailAlreadyRegistered(
+            EmailAlreadyRegisteredException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new EmailAlreadyRegisteredErrorResponse(
+                        "EMAIL_ALREADY_REGISTERED", ex.getMessage(), ex.getRegisteredProvider()));
+    }
+
+    @ExceptionHandler(OAuthProviderException.class)
+    public ResponseEntity<ErrorResponse> handleOAuthProvider(OAuthProviderException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse("OAUTH_PROVIDER_ERROR", ex.getMessage()));
+    }
 
     @ExceptionHandler(SpeakingSessionNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSpeakingSessionNotFound(SpeakingSessionNotFoundException ex) {
@@ -83,6 +116,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_REQUEST", "요청 값이 올바르지 않습니다."));
+    }
+
+    /** 경로 변수·요청 파라미터 변환 실패(예: 모르는 제공자 /api/auth/oauth/naver) */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("INVALID_REQUEST", "요청 값이 올바르지 않습니다."));
     }
