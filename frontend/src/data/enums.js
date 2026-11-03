@@ -4,32 +4,25 @@
 
 export const Role = {
   LEARNER: 'LEARNER',
-  MANAGER: 'MANAGER',
-  ADMIN: 'ADMIN',
 }
 
 export const UserStatus = {
-  PENDING: 'PENDING',
   ACTIVE: 'ACTIVE',
-  REJECTED: 'REJECTED',
-  INACTIVE: 'INACTIVE',
 }
 
 export const UserStatusLabel = {
-  PENDING: '승인 대기',
   ACTIVE: '활성',
-  REJECTED: '거절',
-  INACTIVE: '비활성',
 }
 
-export const OrganizationStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
+// 소셜 로그인 제공자입니다. API 경로와 응답 값은 소문자(google, kakao)입니다.
+export const OAuthProvider = {
+  GOOGLE: 'google',
+  KAKAO: 'kakao',
 }
 
-export const OrganizationStatusLabel = {
-  ACTIVE: '활성',
-  INACTIVE: '비활성',
+export const OAuthProviderLabel = {
+  google: '구글',
+  kakao: '카카오',
 }
 
 export const SessionType = {
@@ -87,11 +80,4 @@ export const SUBTITLE_MODE_OPTIONS = Object.values(SubtitleMode).map((value) => 
 export const QuestionKind = {
   INITIAL: 'INITIAL',
   FOLLOW_UP: 'FOLLOW_UP',
-}
-
-// Sign Up 시 선택하는 계정 유형입니다. ADMIN은 DB seed로만 생성되므로
-// Sign Up UI 옵션에는 절대 포함하지 않습니다.
-export const SignUpAccountType = {
-  LEARNER: 'LEARNER',
-  MANAGER: 'MANAGER',
 }

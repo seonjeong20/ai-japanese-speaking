@@ -1,20 +1,13 @@
 import { apiFetch, setSession } from './client'
 
-export async function login(email, password) {
-  const response = await apiFetch('/api/auth/login', {
+// POST /api/auth/oauth/{provider} — 제공자가 돌려준 인가 코드로 가입 겸 로그인합니다.
+// redirectUri는 인가 요청 때와 같은 값이어야 합니다.
+export async function oauthLogin(provider, code, redirectUri) {
+  const response = await apiFetch(`/api/auth/oauth/${provider}`, {
     method: 'POST',
-    body: { email, password },
+    body: { code, redirectUri },
     auth: false,
   })
   setSession(response.accessToken, response.user)
-  return response.user
-}
-
-// POST /api/auth/signup — LEARNER/MANAGER 가입 신청 (결과는 항상 PENDING)
-export function signup({ name, email, password, role, organizationId, department }) {
-  return apiFetch('/api/auth/signup', {
-    method: 'POST',
-    body: { name, email, password, role, organizationId, department: department || undefined },
-    auth: false,
-  })
+  return { user: response.user, newUser: response.newUser }
 }

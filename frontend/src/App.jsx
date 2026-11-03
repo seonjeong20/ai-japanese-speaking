@@ -4,6 +4,7 @@ import { AUTH_EXPIRED_EVENT } from './api/client'
 import { Role } from './data/enums'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AuthPage from './pages/Auth/AuthPage'
+import AuthCallbackPage from './pages/AuthCallback/AuthCallbackPage'
 import DashboardPage from './pages/Dashboard/DashboardPage'
 import LearningPage from './pages/Learning/LearningPage'
 import ConversationSetupPage from './pages/ConversationSetup/ConversationSetupPage'
@@ -15,15 +16,6 @@ import InterviewFeedbackPage from './pages/InterviewFeedback/InterviewFeedbackPa
 import MyHistoryPage from './pages/MyHistory/MyHistoryPage'
 import HistoryDetailPage from './pages/HistoryDetail/HistoryDetailPage'
 import SettingsPage from './pages/Settings/SettingsPage'
-import ManagerDashboardPage from './pages/ManagerDashboard/ManagerDashboardPage'
-import ManagerLearnersPage from './pages/ManagerLearners/ManagerLearnersPage'
-import ManagerSettingsPage from './pages/ManagerSettings/ManagerSettingsPage'
-
-import AdminLayout from './components/layout/AdminLayout'
-import AdminDashboardPage from './pages/Admin/AdminDashboardPage'
-import AdminCustomersPage from './pages/Admin/AdminCustomersPage'
-import AdminManagersPage from './pages/Admin/AdminManagersPage'
-import AdminSettingsPage from './pages/Admin/AdminSettingsPage'
 
 function App() {
   const navigate = useNavigate()
@@ -39,6 +31,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<AuthPage />} />
+      <Route path="/auth/callback/:provider" element={<AuthCallbackPage />} />
       <Route element={<ProtectedRoute allowedRoles={[Role.LEARNER]} />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/learning" element={<LearningPage />} />
@@ -51,20 +44,6 @@ function App() {
         <Route path="/history" element={<MyHistoryPage />} />
         <Route path="/history/:id" element={<HistoryDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-      </Route>
-      <Route element={<ProtectedRoute allowedRoles={[Role.MANAGER]} />}>
-        <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
-        <Route path="/manager/learners" element={<ManagerLearnersPage />} />
-        <Route path="/manager/settings" element={<ManagerSettingsPage />} />
-      </Route>
-      <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN]} />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="customers" element={<AdminCustomersPage />} />
-          <Route path="managers" element={<AdminManagersPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

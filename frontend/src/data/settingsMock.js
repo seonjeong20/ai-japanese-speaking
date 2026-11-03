@@ -5,7 +5,6 @@ import { Difficulty, SubtitleMode } from './enums'
 export const accountMock = {
   name: 'skala',
   email: 'skala@example.com',
-  organization: 'SKALA Academy',
 }
 
 // Speaking 학습 기본 설정의 초기값입니다. GET/PATCH /api/users/me/preferences 응답과
