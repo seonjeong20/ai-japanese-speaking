@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser } from '../../api/client'
-import { deleteMe } from '../../api/users'
+import { getMe } from '../../api/auth'
+import { deleteMe, getPreferences, updatePreferences } from '../../api/users'
 import LearnerLayout from '../../components/layout/LearnerLayout'
 import SegmentedControl from '../../components/setup/SegmentedControl'
 import { CheckSmallIcon } from '../../components/icons/DashboardIcons'
-import { accountMock, defaultSpeakingSettings } from '../../data/settingsMock'
-import { DIFFICULTY_OPTIONS, OAuthProvider, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
+import { defaultSpeakingSettings } from '../../data/settingsMock'
+import { DIFFICULTY_OPTIONS, OAuthProvider, OAuthProviderLabel, SUBTITLE_MODE_OPTIONS } from '../../data/enums'
 import '../../components/setup/SetupForm.css'
 import '../../components/feedback/FeedbackPage.css'
 import './SettingsPage.css'
 
 const SUCCESS_MESSAGE_MS = 2500
+const SAVE_SUCCESS_MESSAGE = '설정이 저장되었습니다.'
+
+// 가입 경로 문구입니다. 예: google → "구글로 가입"
+function providerText(provider) {
+  const label = OAuthProviderLabel[provider]
+  return label ? `${label}로 가입` : '-'
+}
 
 const DELETED_ITEMS = ['계정', '일반 회화 기록', '면접 질문·답변·평가', '피드백', '설정']
 
@@ -88,13 +96,23 @@ function AccountDeleteModal({ open, isGoogleUser, isDeleting, errorMessage, onCa
 }
 
 function SettingsPage() {
-  // savedSettings: 마지막으로 "저장"된 값(Backend가 없으므로 frontend에서만 유지).
+  // 계정 정보(GET /api/auth/me). 읽기 전용입니다.
+  const [account, setAccount] = useState(null)
+  const [isAccountLoading, setAccountLoading] = useState(true)
+  const [accountError, setAccountError] = useState('')
+
+  // savedSettings: 서버에 저장된 값(GET·PATCH /api/users/me/preferences 응답).
   // draftSettings: 사용자가 현재 화면에서 고르고 있는 값.
   const [savedSettings, setSavedSettings] = useState(defaultSpeakingSettings)
   const [draftSettings, setDraftSettings] = useState(defaultSpeakingSettings)
+  const [isPreferencesLoading, setPreferencesLoading] = useState(true)
+  const [preferencesLoadError, setPreferencesLoadError] = useState('')
+  const [isSaving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
   const navigate = useNavigate()
-  const isGoogleUser = getCurrentUser()?.provider === OAuthProvider.GOOGLE
+  // 구글 안내 여부는 /api/auth/me 응답을 우선하고, 아직 없으면 로그인 때 저장한 사용자 정보로 정합니다.
+  const isGoogleUser = (account?.provider ?? getCurrentUser()?.provider) === OAuthProvider.GOOGLE
   const [isDeleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
@@ -103,14 +121,79 @@ function SettingsPage() {
     draftSettings.difficulty !== savedSettings.difficulty ||
     draftSettings.subtitleMode !== savedSettings.subtitleMode
 
+  useEffect(() => {
+    let ignore = false
+    getMe()
+      .then((user) => {
+        if (!ignore) setAccount(user)
+      })
+      .catch((error) => {
+        if (!ignore) setAccountError(error.message || '계정 정보를 불러오지 못했습니다.')
+      })
+      .finally(() => {
+        if (!ignore) setAccountLoading(false)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  // 불러오는 동안에는 선택 칸을 보여 주지 않으므로, 늦게 온 응답이 사용자가 고른 값을 덮어쓰지 않습니다.
+  useEffect(() => {
+    let ignore = false
+    getPreferences()
+      .then((preferences) => {
+        if (ignore) return
+        const loaded = {
+          difficulty: preferences?.defaultDifficulty ?? defaultSpeakingSettings.difficulty,
+          subtitleMode: preferences?.defaultSubtitleMode ?? defaultSpeakingSettings.subtitleMode,
+        }
+        setSavedSettings(loaded)
+        setDraftSettings(loaded)
+      })
+      .catch((error) => {
+        if (ignore) return
+        setPreferencesLoadError(
+          `${error.message || '저장한 기본값을 불러오지 못했습니다.'} 지금은 기본값(중급, 일본어 + 한국어)을 보여 주고 있어요.`,
+        )
+      })
+      .finally(() => {
+        if (!ignore) setPreferencesLoading(false)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
+
   const updateDraft = (key, value) => {
     setDraftSettings((prev) => ({ ...prev, [key]: value }))
     setShowSuccess(false)
+    setSaveError('')
   }
 
-  const handleSave = () => {
-    setSavedSettings(draftSettings)
-    setShowSuccess(true)
+  const handleSave = async () => {
+    if (isSaving) return
+    setSaving(true)
+    setSaveError('')
+    setShowSuccess(false)
+    try {
+      const saved = await updatePreferences({
+        defaultDifficulty: draftSettings.difficulty,
+        defaultSubtitleMode: draftSettings.subtitleMode,
+      })
+      const next = {
+        difficulty: saved?.defaultDifficulty ?? draftSettings.difficulty,
+        subtitleMode: saved?.defaultSubtitleMode ?? draftSettings.subtitleMode,
+      }
+      setSavedSettings(next)
+      setDraftSettings(next)
+      setPreferencesLoadError('')
+      setShowSuccess(true)
+    } catch (error) {
+      setSaveError(error.message || '설정을 저장하지 못했습니다. 다시 시도해 주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const openDeleteModal = () => {
@@ -154,34 +237,62 @@ function SettingsPage() {
 
         <div className="setup-page__card">
           <p className="settings-section__title">계정 정보</p>
-          <div className="settings-account">
-            <div className="settings-account__row">
-              <span className="settings-account__label">이름</span>
-              <span className="settings-account__value">{accountMock.name}</span>
+          {isAccountLoading ? (
+            <p className="settings-page__loading" role="status">
+              계정 정보를 불러오는 중...
+            </p>
+          ) : accountError ? (
+            <p className="setup-page__error" role="alert">
+              {accountError}
+            </p>
+          ) : (
+            <div className="settings-account">
+              <div className="settings-account__row">
+                <span className="settings-account__label">이름</span>
+                <span className="settings-account__value">{account?.name ?? '-'}</span>
+              </div>
+              <div className="settings-account__row">
+                <span className="settings-account__label">이메일</span>
+                <span className="settings-account__value">{account?.email ?? '-'}</span>
+              </div>
+              <div className="settings-account__row">
+                <span className="settings-account__label">가입 경로</span>
+                <span className="settings-account__value">{providerText(account?.provider)}</span>
+              </div>
             </div>
-            <div className="settings-account__row">
-              <span className="settings-account__label">이메일</span>
-              <span className="settings-account__value">{accountMock.email}</span>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="setup-page__card">
           <p className="settings-section__title">Speaking 기본 설정</p>
 
-          <SegmentedControl
-            label="기본 난이도"
-            options={DIFFICULTY_OPTIONS}
-            value={draftSettings.difficulty}
-            onChange={(value) => updateDraft('difficulty', value)}
-          />
+          {isPreferencesLoading ? (
+            <p className="settings-page__loading" role="status">
+              기본 설정을 불러오는 중...
+            </p>
+          ) : (
+            <>
+              {preferencesLoadError && (
+                <p className="setup-page__error" role="alert">
+                  {preferencesLoadError}
+                </p>
+              )}
 
-          <SegmentedControl
-            label="기본 자막"
-            options={SUBTITLE_MODE_OPTIONS}
-            value={draftSettings.subtitleMode}
-            onChange={(value) => updateDraft('subtitleMode', value)}
-          />
+              <SegmentedControl
+                label="기본 난이도"
+                options={DIFFICULTY_OPTIONS}
+                value={draftSettings.difficulty}
+                onChange={(value) => updateDraft('difficulty', value)}
+              />
+
+              <SegmentedControl
+                label="기본 자막"
+                options={SUBTITLE_MODE_OPTIONS}
+                value={draftSettings.subtitleMode}
+                onChange={(value) => updateDraft('subtitleMode', value)}
+              />
+            </>
+          )}
         </div>
 
         <div className="settings-page__save-row">
@@ -189,9 +300,9 @@ function SettingsPage() {
             type="button"
             className="setup-page__cta settings-page__save-button"
             onClick={handleSave}
-            disabled={!isDirty}
+            disabled={!isDirty || isSaving || isPreferencesLoading}
           >
-            설정 저장
+            {isSaving ? '저장하는 중...' : '설정 저장'}
           </button>
 
           <p
@@ -199,9 +310,15 @@ function SettingsPage() {
             role="status"
           >
             <CheckSmallIcon size={12} />
-            설정이 저장되었습니다.
+            {SAVE_SUCCESS_MESSAGE}
           </p>
         </div>
+
+        {saveError && (
+          <p className="setup-page__error" role="alert">
+            {saveError}
+          </p>
+        )}
 
         <div className="setup-page__card settings-danger">
           <p className="settings-section__title">회원 탈퇴</p>

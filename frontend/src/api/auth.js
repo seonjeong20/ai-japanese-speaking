@@ -11,3 +11,8 @@ export async function oauthLogin(provider, code, redirectUri) {
   setSession(response.accessToken, response.user)
   return { user: response.user, newUser: response.newUser }
 }
+
+// GET /api/auth/me — 지금 로그인한 사용자(이름·이메일·가입 경로 등)를 조회합니다.
+export async function getMe() {
+  return apiFetch('/api/auth/me')
+}

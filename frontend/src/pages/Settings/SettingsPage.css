@@ -254,3 +254,11 @@
 .settings-modal__button--danger:hover:not(:disabled) {
   filter: brightness(1.08);
 }
+
+/* Loading */
+
+.settings-page__loading {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+}
