@@ -18,7 +18,7 @@
 
 ## 미처리 변경 요청 (멈출 지점에 걸린 것)
 
-없음.
+- T7 리뷰 지적 3개 미수정 (PR 본문). 남은 정리: README·architecture.md의 "코드는 아직 B2B2C" 안내 삭제.
 
 ## 배포 때 주의할 것
 
@@ -37,5 +37,5 @@ TC-10(로그아웃), TC-11(토큰 만료 시 첫 화면 이동), TC-13(로그인
 | 3 | T3 `backend-oauth-login` | PR 생성 | Codex: 차단 0, 중요 2 (1 고침, 1 근거와 함께 보류) | #20 |
 | 4 | T4 `backend-account-delete` | PR 생성 | Codex: 차단 1 (운영 DB 없음, 배포 주의로 기록) | #21 |
 | 5 | T6 `backend-preferences` | PR 생성 | Codex: 차단 1, 사소 1 (모두 고침) | #22 |
-| 6 | T5 `web-auth` | 진행 중 | — | — |
-| 7 | T7 `web-settings` | 대기 | — | — |
+| 6 | T5 `web-auth` | PR 생성 | Codex: 차단 0, 사소 3 (범위 밖 수정 기록) | #23 |
+| 7 | T7 `web-settings` | PR 생성 (리뷰 지적 미수정) | Codex: 중요 2, 사소 1 (사용량 한도로 수정 못 함, PR 본문 참고) | PR 생성 |
