@@ -20,6 +20,10 @@
 
 없음.
 
+## 배포 때 주의할 것
+
+- 운영 DB(Neon)는 새로 만든다. 탈퇴는 DB 외래 키의 `ON DELETE CASCADE`로 학습 기록을 지우는데, `ddl-auto: update`는 이미 있는 외래 키를 바꾸지 않는다. 기존 DB를 쓰면 탈퇴가 500이 된다(T4 PR). 로컬 개발 DB도 같은 이유로 `docker compose down -v && make db`로 새로 만든다.
+
 ## MVP 때 사람이 확인할 것
 
 TC-10(로그아웃), TC-11(토큰 만료 시 첫 화면 이동), TC-13(로그인 취소), TC-17(탈퇴 취소), TC-S10(회화 설정에 기본값), TC-S11(가입 경로 표시), M-1 ~ M-5(실제 구글·카카오 연동, [specs/account.md](specs/account.md) 3장).
@@ -30,8 +34,8 @@ TC-10(로그아웃), TC-11(토큰 만료 시 첫 화면 이동), TC-13(로그인
 |---|---|---|---|---|
 | 1 | T1 `infra-env` | PR 생성 | Codex: 차단 0, 중요 4 (반영·확인) | #18 |
 | 2 | T2 `backend-b2c-cleanup` | PR 생성 | Codex: 차단 0, 중요 2, 사소 1 (범위 예외로 기록) | #19 |
-| 3 | T3 `backend-oauth-login` | 진행 중 | — | — |
-| 4 | T4 `backend-account-delete` | 대기 | — | — |
+| 3 | T3 `backend-oauth-login` | PR 생성 | Codex: 차단 0, 중요 2 (1 고침, 1 근거와 함께 보류) | #20 |
+| 4 | T4 `backend-account-delete` | 진행 중 | — | — |
 | 5 | T6 `backend-preferences` | 대기 | — | — |
 | 6 | T5 `web-auth` | 대기 | — | — |
 | 7 | T7 `web-settings` | 대기 | — | — |
