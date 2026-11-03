@@ -13,27 +13,20 @@ import com.aijapanese.speaking.interview.ai.InterviewFirstQuestionResult;
 import com.aijapanese.speaking.interview.dto.InterviewStartRequest;
 import com.aijapanese.speaking.interview.entity.EvaluationCriterion;
 import com.aijapanese.speaking.interview.exception.InterviewFeedbackNotFoundException;
-import com.aijapanese.speaking.organization.entity.Organization;
-import com.aijapanese.speaking.organization.entity.OrganizationStatus;
-import com.aijapanese.speaking.organization.repository.OrganizationRepository;
 import com.aijapanese.speaking.speaking.entity.SessionStatus;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionAccessDeniedException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotInProgressException;
 import com.aijapanese.speaking.speaking.repository.SpeakingSessionRepository;
-import com.aijapanese.speaking.user.entity.User;
-import com.aijapanese.speaking.user.entity.UserRole;
-import com.aijapanese.speaking.user.entity.UserStatus;
+import com.aijapanese.speaking.support.TestUsers;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,8 +49,6 @@ class InterviewAbortServiceIntegrationTest {
     @Autowired private InterviewService interviewService;
     @Autowired private SpeakingSessionRepository speakingSessionRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private OrganizationRepository organizationRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
 
     @MockitoBean private InterviewAiService interviewAiService;
     @MockitoBean private InterviewAnswerEvaluationAiService evaluationAiService;
@@ -66,7 +57,7 @@ class InterviewAbortServiceIntegrationTest {
 
     @Test
     void abortInterview_ownInProgressSession_succeeds() {
-        Long userId = createUser("interview-abort-1@example.com");
+        Long userId = createUser("interview-abort-1");
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
 
@@ -83,7 +74,7 @@ class InterviewAbortServiceIntegrationTest {
 
     @Test
     void abortInterview_doesNotGenerateFinalFeedback() {
-        Long userId = createUser("interview-abort-2@example.com");
+        Long userId = createUser("interview-abort-2");
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
 
@@ -96,8 +87,8 @@ class InterviewAbortServiceIntegrationTest {
 
     @Test
     void abortInterview_rejectsOtherUsersSession() {
-        Long ownerId = createUser("interview-abort-3-owner@example.com");
-        Long otherId = createUser("interview-abort-3-other@example.com");
+        Long ownerId = createUser("interview-abort-3-owner");
+        Long otherId = createUser("interview-abort-3-other");
         stubFirstQuestion();
         var start = interviewService.startInterview(ownerId, sampleRequest());
 
@@ -107,7 +98,7 @@ class InterviewAbortServiceIntegrationTest {
 
     @Test
     void abortInterview_throwsWhenSessionNotFound() {
-        Long userId = createUser("interview-abort-4@example.com");
+        Long userId = createUser("interview-abort-4");
 
         assertThatThrownBy(() -> interviewService.abortInterview(999_999_999L, userId))
                 .isInstanceOf(SpeakingSessionNotFoundException.class);
@@ -115,7 +106,7 @@ class InterviewAbortServiceIntegrationTest {
 
     @Test
     void abortInterview_rejectsAlreadyCompletedSession() {
-        Long userId = createUser("interview-abort-5@example.com");
+        Long userId = createUser("interview-abort-5");
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
 
@@ -134,7 +125,7 @@ class InterviewAbortServiceIntegrationTest {
 
     @Test
     void abortInterview_rejectsAlreadyAbortedSession() {
-        Long userId = createUser("interview-abort-6@example.com");
+        Long userId = createUser("interview-abort-6");
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
         interviewService.abortInterview(start.sessionId(), userId);
@@ -189,14 +180,8 @@ class InterviewAbortServiceIntegrationTest {
         );
     }
 
-    private Long createUser(String email) {
-        Organization organization = organizationRepository.save(
-                new Organization("Test Org " + email, OrganizationStatus.ACTIVE, LocalDateTime.now())
-        );
-        return userRepository.save(new User(
-                organization, "Test Learner", email, passwordEncoder.encode("password123"),
-                null, UserRole.LEARNER, UserStatus.ACTIVE, LocalDateTime.now()
-        )).getId();
+    private Long createUser(String suffix) {
+        return TestUsers.learner(userRepository, suffix).getId();
     }
 
     private InterviewStartRequest sampleRequest() {

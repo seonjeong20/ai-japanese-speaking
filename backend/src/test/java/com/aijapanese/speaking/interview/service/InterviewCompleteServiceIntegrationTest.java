@@ -18,24 +18,17 @@ import com.aijapanese.speaking.interview.entity.GenerationStatus;
 import com.aijapanese.speaking.interview.exception.InterviewAnswerConflictException;
 import com.aijapanese.speaking.interview.exception.InterviewFeedbackNotFoundException;
 import com.aijapanese.speaking.interview.repository.InterviewFeedbackRepository;
-import com.aijapanese.speaking.organization.entity.Organization;
-import com.aijapanese.speaking.organization.entity.OrganizationStatus;
-import com.aijapanese.speaking.organization.repository.OrganizationRepository;
 import com.aijapanese.speaking.speaking.entity.SessionStatus;
 import com.aijapanese.speaking.speaking.repository.SpeakingSessionRepository;
-import com.aijapanese.speaking.user.entity.User;
-import com.aijapanese.speaking.user.entity.UserRole;
-import com.aijapanese.speaking.user.entity.UserStatus;
+import com.aijapanese.speaking.support.TestUsers;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,8 +50,6 @@ class InterviewCompleteServiceIntegrationTest {
     @Autowired private SpeakingSessionRepository speakingSessionRepository;
     @Autowired private InterviewFeedbackRepository interviewFeedbackRepository;
     @Autowired private UserRepository userRepository;
-    @Autowired private OrganizationRepository organizationRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
 
     @MockitoBean private InterviewAiService interviewAiService;
     @MockitoBean private InterviewAnswerEvaluationAiService evaluationAiService;
@@ -67,7 +58,7 @@ class InterviewCompleteServiceIntegrationTest {
 
     @Test
     void completeInterview_aggregatesScoreAndSavesFinalFeedback() {
-        StartedInterview started = driveToCompletion("complete-success@example.com");
+        StartedInterview started = driveToCompletion("complete-success");
 
         var response = interviewService.completeInterview(started.sessionId(), started.userId());
 
@@ -88,7 +79,7 @@ class InterviewCompleteServiceIntegrationTest {
 
     @Test
     void completeInterview_rejectsWhenUnansweredQuestionRemains() {
-        Long userId = createUser("complete-unanswered@example.com", UserRole.LEARNER);
+        Long userId = createUser("complete-unanswered");
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
 
@@ -108,7 +99,7 @@ class InterviewCompleteServiceIntegrationTest {
      */
     @Test
     void completeInterview_propagatesExceptionWhenFinalFeedbackAiFails() {
-        StartedInterview started = driveToCompletion("complete-ai-fail@example.com");
+        StartedInterview started = driveToCompletion("complete-ai-fail");
         org.mockito.Mockito.doThrow(new AiServiceException("final feedback failed"))
                 .when(finalFeedbackAiService).summarize(any(), any(), any(), any());
 
@@ -118,7 +109,7 @@ class InterviewCompleteServiceIntegrationTest {
 
     @Test
     void getFeedback_readsFromDbWithoutCallingAiAgain() {
-        StartedInterview started = driveToCompletion("feedback-db-only@example.com");
+        StartedInterview started = driveToCompletion("feedback-db-only");
         interviewService.completeInterview(started.sessionId(), started.userId());
 
         InterviewFeedbackResponse response = interviewService.getFeedback(started.sessionId(), started.userId());
@@ -133,7 +124,7 @@ class InterviewCompleteServiceIntegrationTest {
 
     @Test
     void getFeedback_throwsWhenNotYetCompleted() {
-        Long userId = createUser("feedback-not-found@example.com", UserRole.LEARNER);
+        Long userId = createUser("feedback-not-found");
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
 
@@ -143,8 +134,8 @@ class InterviewCompleteServiceIntegrationTest {
 
     @Test
     void otherUserCannotCompleteOrReadFeedback() {
-        Long ownerId = createUser("complete-owner@example.com", UserRole.LEARNER);
-        Long otherId = createUser("complete-other@example.com", UserRole.LEARNER);
+        Long ownerId = createUser("complete-owner");
+        Long otherId = createUser("complete-other");
         stubFirstQuestion();
         var start = interviewService.startInterview(ownerId, sampleRequest());
 
@@ -166,7 +157,7 @@ class InterviewCompleteServiceIntegrationTest {
 
     /** 꼬리질문 없이(followUpNeeded=false) INITIAL 5개를 모두 답해 진행 가능한 질문이 없는 상태로 만든다. */
     private StartedInterview driveToCompletion(String email) {
-        Long userId = createUser(email, UserRole.LEARNER);
+        Long userId = createUser(email);
         stubFirstQuestion();
         var start = interviewService.startInterview(userId, sampleRequest());
 
@@ -180,14 +171,8 @@ class InterviewCompleteServiceIntegrationTest {
         return new StartedInterview(userId, start.sessionId());
     }
 
-    private Long createUser(String email, UserRole role) {
-        Organization organization = organizationRepository.save(
-                new Organization("Test Org " + email, OrganizationStatus.ACTIVE, LocalDateTime.now())
-        );
-        return userRepository.save(new User(
-                organization, "Test " + role, email, passwordEncoder.encode("password123"),
-                null, role, UserStatus.ACTIVE, LocalDateTime.now()
-        )).getId();
+    private Long createUser(String suffix) {
+        return TestUsers.learner(userRepository, suffix).getId();
     }
 
     private InterviewStartRequest sampleRequest() {

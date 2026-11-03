@@ -15,9 +15,6 @@ import com.aijapanese.speaking.conversation.entity.SubtitleMode;
 import com.aijapanese.speaking.conversation.exception.ConversationFeedbackNotFoundException;
 import com.aijapanese.speaking.conversation.exception.ConversationOpeningNotAllowedException;
 import com.aijapanese.speaking.conversation.repository.ConversationFeedbackRepository;
-import com.aijapanese.speaking.organization.entity.Organization;
-import com.aijapanese.speaking.organization.entity.OrganizationStatus;
-import com.aijapanese.speaking.organization.repository.OrganizationRepository;
 import com.aijapanese.speaking.speaking.dto.SpeakingSessionResponse;
 import com.aijapanese.speaking.speaking.entity.SessionStatus;
 import com.aijapanese.speaking.speaking.entity.SessionType;
@@ -29,9 +26,8 @@ import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundExcepti
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotInProgressException;
 import com.aijapanese.speaking.speaking.repository.SpeakingMessageRepository;
 import com.aijapanese.speaking.speaking.repository.SpeakingSessionRepository;
-import com.aijapanese.speaking.user.entity.User;
+import com.aijapanese.speaking.support.TestUsers;
 import com.aijapanese.speaking.user.entity.UserRole;
-import com.aijapanese.speaking.user.entity.UserStatus;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -80,8 +76,6 @@ class ConversationServiceIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
 
     @Autowired
     private SpeakingSessionRepository speakingSessionRepository;
@@ -107,26 +101,13 @@ class ConversationServiceIntegrationTest {
     @MockitoBean
     private ConversationFeedbackAiService conversationFeedbackAiService;
 
-    private Long createLearner(String email) {
-        Organization organization = organizationRepository.save(
-                new Organization("Test Org " + email, OrganizationStatus.ACTIVE, LocalDateTime.now())
-        );
-        User user = new User(
-                organization,
-                "Test Learner",
-                email,
-                "hash",
-                null,
-                UserRole.LEARNER,
-                UserStatus.ACTIVE,
-                LocalDateTime.now()
-        );
-        return userRepository.save(user).getId();
+    private Long createLearner(String suffix) {
+        return TestUsers.learner(userRepository, suffix).getId();
     }
 
     @Test
     void startConversation_createsSessionAndSetting() {
-        Long userId = createLearner("conv-test-1@example.com");
+        Long userId = createLearner("conv-test-1");
 
         ConversationStartRequest request = new ConversationStartRequest(
                 "CAFE", "친구", "밝고 친근함", "테스트 상황", Difficulty.INTERMEDIATE, SubtitleMode.JAPANESE_KOREAN
@@ -142,7 +123,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void recordUserMessage_persistsMessageWithIncrementingSequence() {
-        Long userId = createLearner("conv-test-2@example.com");
+        Long userId = createLearner("conv-test-2");
         ConversationStartRequest request = new ConversationStartRequest(
                 null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF
         );
@@ -160,8 +141,8 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void recordUserMessage_rejectsOtherUsersSession() {
-        Long ownerId = createLearner("conv-test-3-owner@example.com");
-        Long otherId = createLearner("conv-test-3-other@example.com");
+        Long ownerId = createLearner("conv-test-3-owner");
+        Long otherId = createLearner("conv-test-3-other");
         SpeakingSessionResponse session = conversationService.startConversation(
                 ownerId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -172,7 +153,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void processTextTurn_savesUserAndAiMessagesUsingMockedAiService() {
-        Long userId = createLearner("conv-test-turn@example.com");
+        Long userId = createLearner("conv-test-turn");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
         );
@@ -194,7 +175,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void completeConversation_withNoMessages_marksFeedbackFailedWithoutCallingAi() {
-        Long userId = createLearner("conv-test-4@example.com");
+        Long userId = createLearner("conv-test-4");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -210,7 +191,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void completeConversationApi_completesConversationSession() throws Exception {
-        Long userId = createLearner("conv-complete-api@example.com");
+        Long userId = createLearner("conv-complete-api");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -232,7 +213,7 @@ class ConversationServiceIntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = {"complete", "abort", "opening", "turns", "turns/audio", "feedback"})
     void conversationApis_rejectInterviewSessionWithoutChangingData(String endpoint) throws Exception {
-        Long userId = createLearner("conv-wrong-type@example.com");
+        Long userId = createLearner("conv-wrong-type");
         LocalDateTime startedAt = LocalDateTime.now().withNano(0);
         SpeakingSession interview = speakingSessionRepository.save(new SpeakingSession(
                 userRepository.getReferenceById(userId), SessionType.INTERVIEW,
@@ -285,7 +266,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void completeConversation_generatesAndPersistsFeedback_whenAiSucceeds() {
-        Long userId = createLearner("conv-test-6@example.com");
+        Long userId = createLearner("conv-test-6");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -317,7 +298,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void completeConversation_marksFeedbackFailed_whenAiThrows() {
-        Long userId = createLearner("conv-test-7@example.com");
+        Long userId = createLearner("conv-test-7");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -334,7 +315,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void getFeedback_throwsWhenNotYetGenerated() {
-        Long userId = createLearner("conv-test-8@example.com");
+        Long userId = createLearner("conv-test-8");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -345,7 +326,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void completeConversation_rejectsAlreadyCompletedSession() {
-        Long userId = createLearner("conv-test-5@example.com");
+        Long userId = createLearner("conv-test-5");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -358,7 +339,7 @@ class ConversationServiceIntegrationTest {
     // 1. 본인 IN_PROGRESS Conversation abort 성공
     @Test
     void abortConversation_ownInProgressSession_succeeds() {
-        Long userId = createLearner("conv-abort-1@example.com");
+        Long userId = createLearner("conv-abort-1");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -374,8 +355,8 @@ class ConversationServiceIntegrationTest {
     // 2. 다른 사용자 session abort → 403
     @Test
     void abortConversation_rejectsOtherUsersSession() {
-        Long ownerId = createLearner("conv-abort-2-owner@example.com");
-        Long otherId = createLearner("conv-abort-2-other@example.com");
+        Long ownerId = createLearner("conv-abort-2-owner");
+        Long otherId = createLearner("conv-abort-2-other");
         SpeakingSessionResponse session = conversationService.startConversation(
                 ownerId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -387,7 +368,7 @@ class ConversationServiceIntegrationTest {
     // 3. 존재하지 않는 session abort → 404
     @Test
     void abortConversation_throwsWhenSessionNotFound() {
-        Long userId = createLearner("conv-abort-3@example.com");
+        Long userId = createLearner("conv-abort-3");
 
         assertThrows(SpeakingSessionNotFoundException.class,
                 () -> conversationService.abortConversation(999_999_999L, userId));
@@ -396,7 +377,7 @@ class ConversationServiceIntegrationTest {
     // 4. COMPLETED session abort 거부
     @Test
     void abortConversation_rejectsAlreadyCompletedSession() {
-        Long userId = createLearner("conv-abort-4@example.com");
+        Long userId = createLearner("conv-abort-4");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -409,7 +390,7 @@ class ConversationServiceIntegrationTest {
     // 5. ABORTED session 재-abort 거부
     @Test
     void abortConversation_rejectsAlreadyAbortedSession() {
-        Long userId = createLearner("conv-abort-5@example.com");
+        Long userId = createLearner("conv-abort-5");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -422,7 +403,7 @@ class ConversationServiceIntegrationTest {
     // 6. abort 시 Feedback AI 호출 없음
     @Test
     void abortConversation_neverCallsFeedbackAi() {
-        Long userId = createLearner("conv-abort-6@example.com");
+        Long userId = createLearner("conv-abort-6");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -436,7 +417,7 @@ class ConversationServiceIntegrationTest {
     // (가능하다면) speaking_messages(session_id, sequence_no) unique 제약이 실제 DB에 적용되어 있는지 확인
     @Test
     void speakingMessages_rejectsDuplicateSequenceNoForSameSession() {
-        Long userId = createLearner("conv-unique-seq@example.com");
+        Long userId = createLearner("conv-unique-seq");
         SpeakingSessionResponse sessionResponse = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -455,7 +436,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void openConversation_firstCall_generatesAndPersistsAiOpeningMessage() {
-        Long userId = createLearner("conv-opening-1@example.com");
+        Long userId = createLearner("conv-opening-1");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
         );
@@ -478,7 +459,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void openConversation_calledTwice_doesNotPersistAdditionalMessageOrRegenerateOpening() {
-        Long userId = createLearner("conv-opening-2@example.com");
+        Long userId = createLearner("conv-opening-2");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
         );
@@ -508,8 +489,8 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void openConversation_rejectsOtherUsersSession() {
-        Long ownerId = createLearner("conv-opening-3-owner@example.com");
-        Long otherId = createLearner("conv-opening-3-other@example.com");
+        Long ownerId = createLearner("conv-opening-3-owner");
+        Long otherId = createLearner("conv-opening-3-other");
         SpeakingSessionResponse session = conversationService.startConversation(
                 ownerId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -521,7 +502,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void openConversation_throwsWhenSessionNotFound() {
-        Long userId = createLearner("conv-opening-4@example.com");
+        Long userId = createLearner("conv-opening-4");
 
         assertThrows(SpeakingSessionNotFoundException.class,
                 () -> conversationService.openConversation(999_999_999L, userId));
@@ -529,7 +510,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void openConversation_rejectsCompletedSession() {
-        Long userId = createLearner("conv-opening-5@example.com");
+        Long userId = createLearner("conv-opening-5");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -541,7 +522,7 @@ class ConversationServiceIntegrationTest {
 
     @Test
     void openConversation_rejectsAbortedSession() {
-        Long userId = createLearner("conv-opening-6@example.com");
+        Long userId = createLearner("conv-opening-6");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
         );
@@ -554,7 +535,7 @@ class ConversationServiceIntegrationTest {
     // 7. opening 호출 전에 USER 발화가 먼저 sequenceNo=1로 저장된 경우, opening 생성을 거부한다.
     @Test
     void openConversation_rejectsWhenFirstMessageIsAlreadyFromUser() {
-        Long userId = createLearner("conv-opening-7@example.com");
+        Long userId = createLearner("conv-opening-7");
         SpeakingSessionResponse session = conversationService.startConversation(
                 userId, new ConversationStartRequest("CAFE", "점원", "친절함", "테스트 상황", Difficulty.BEGINNER, SubtitleMode.JAPANESE_KOREAN)
         );

@@ -20,17 +20,12 @@ import com.aijapanese.speaking.interview.ai.InterviewFirstQuestionResult;
 import com.aijapanese.speaking.interview.dto.InterviewStartRequest;
 import com.aijapanese.speaking.interview.entity.EvaluationCriterion;
 import com.aijapanese.speaking.interview.service.InterviewService;
-import com.aijapanese.speaking.organization.entity.Organization;
-import com.aijapanese.speaking.organization.entity.OrganizationStatus;
-import com.aijapanese.speaking.organization.repository.OrganizationRepository;
 import com.aijapanese.speaking.speaking.dto.SpeakingSessionResponse;
 import com.aijapanese.speaking.speaking.entity.SessionStatus;
 import com.aijapanese.speaking.speaking.entity.SessionType;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionAccessDeniedException;
 import com.aijapanese.speaking.speaking.exception.SpeakingSessionNotFoundException;
-import com.aijapanese.speaking.user.entity.User;
-import com.aijapanese.speaking.user.entity.UserRole;
-import com.aijapanese.speaking.user.entity.UserStatus;
+import com.aijapanese.speaking.support.TestUsers;
 import com.aijapanese.speaking.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +34,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +54,6 @@ class HistoryServiceIntegrationTest {
     @Autowired private ConversationService conversationService;
     @Autowired private InterviewService interviewService;
     @Autowired private UserRepository userRepository;
-    @Autowired private OrganizationRepository organizationRepository;
 
     @MockitoBean private ConversationFeedbackAiService conversationFeedbackAiService;
     @MockitoBean private InterviewAiService interviewAiService;
@@ -70,8 +63,8 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistory_returnsOnlyOwnCompletedSessions_mostRecentFirst() {
-        Long userId = createLearner("history-list-1@example.com");
-        Long otherUserId = createLearner("history-list-other@example.com");
+        Long userId = createLearner("history-list-1");
+        Long otherUserId = createLearner("history-list-other");
 
         // 본인 소유의 완료된 회화 세션 1개
         stubConversationFeedback();
@@ -105,7 +98,7 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistory_ordersMultipleCompletedSessionsByStartedAtDesc() {
-        Long userId = createLearner("history-list-order@example.com");
+        Long userId = createLearner("history-list-order");
         stubConversationFeedback();
 
         SpeakingSessionResponse first = conversationService.startConversation(
@@ -127,7 +120,7 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistoryDetail_conversation_returnsTranscriptAndFeedback() {
-        Long userId = createLearner("history-detail-conv@example.com");
+        Long userId = createLearner("history-detail-conv");
         stubConversationFeedback();
 
         SpeakingSessionResponse session = conversationService.startConversation(
@@ -151,7 +144,7 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistoryDetail_interview_returnsQuestionsAndFinalFeedback() {
-        InterviewSessionFixture fixture = driveInterviewToCompletion("history-detail-interview@example.com");
+        InterviewSessionFixture fixture = driveInterviewToCompletion("history-detail-interview");
 
         HistoryDetailResponse detail = historyService.getHistoryDetail(fixture.sessionId(), fixture.userId());
 
@@ -166,7 +159,7 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistory_interviewItem_includesOverallScore() {
-        InterviewSessionFixture fixture = driveInterviewToCompletion("history-list-interview-score@example.com");
+        InterviewSessionFixture fixture = driveInterviewToCompletion("history-list-interview-score");
 
         HistoryListResponse history = historyService.getHistory(fixture.userId());
 
@@ -178,8 +171,8 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistoryDetail_rejectsOtherUsersSession() {
-        Long ownerId = createLearner("history-detail-owner@example.com");
-        Long otherId = createLearner("history-detail-other@example.com");
+        Long ownerId = createLearner("history-detail-owner");
+        Long otherId = createLearner("history-detail-other");
         stubConversationFeedback();
         SpeakingSessionResponse session = conversationService.startConversation(
                 ownerId, new ConversationStartRequest(null, null, null, null, Difficulty.BEGINNER, SubtitleMode.OFF)
@@ -192,7 +185,7 @@ class HistoryServiceIntegrationTest {
 
     @Test
     void getHistoryDetail_throwsWhenSessionNotFound() {
-        Long userId = createLearner("history-detail-not-found@example.com");
+        Long userId = createLearner("history-detail-not-found");
 
         assertThatThrownBy(() -> historyService.getHistoryDetail(999_999_999L, userId))
                 .isInstanceOf(SpeakingSessionNotFoundException.class);
@@ -274,15 +267,8 @@ class HistoryServiceIntegrationTest {
         );
     }
 
-    private Long createLearner(String email) {
-        Organization organization = organizationRepository.save(
-                new Organization("Test Org " + email, OrganizationStatus.ACTIVE, LocalDateTime.now())
-        );
-        User user = new User(
-                organization, "Test Learner", email, "hash",
-                null, UserRole.LEARNER, UserStatus.ACTIVE, LocalDateTime.now()
-        );
-        return userRepository.save(user).getId();
+    private Long createLearner(String suffix) {
+        return TestUsers.learner(userRepository, suffix).getId();
     }
 
     private record InterviewSessionFixture(Long userId, Long sessionId) {

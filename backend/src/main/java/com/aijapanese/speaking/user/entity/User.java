@@ -1,22 +1,25 @@
 package com.aijapanese.speaking.user.entity;
 
-import com.aijapanese.speaking.organization.entity.Organization;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_users_provider_provider_user_id",
+                columnNames = {"provider", "provider_user_id"}
+        )
+)
 public class User {
 
     @Id
@@ -24,21 +27,18 @@ public class User {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id", nullable = true)
-    private Organization organization;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider", length = 20, nullable = false)
+    private OAuthProvider provider;
+
+    @Column(name = "provider_user_id", length = 255, nullable = false)
+    private String providerUserId;
 
     @Column(name = "name", length = 50, nullable = false)
     private String name;
 
     @Column(name = "email", length = 255, nullable = false, unique = true)
     private String email;
-
-    @Column(name = "password_hash", length = 255, nullable = false)
-    private String passwordHash;
-
-    @Column(name = "department", length = 100, nullable = true)
-    private String department;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 20, nullable = false)
@@ -60,23 +60,22 @@ public class User {
     protected User() {
     }
 
+    /**
+     * 소셜 로그인으로 처음 가입한 사용자. 역할은 LEARNER, 상태는 ACTIVE로 시작한다.
+     */
     public User(
-            Organization organization,
+            OAuthProvider provider,
+            String providerUserId,
             String name,
             String email,
-            String passwordHash,
-            String department,
-            UserRole role,
-            UserStatus status,
             LocalDateTime createdAt
     ) {
-        this.organization = organization;
+        this.provider = provider;
+        this.providerUserId = providerUserId;
         this.name = name;
         this.email = email;
-        this.passwordHash = passwordHash;
-        this.department = department;
-        this.role = role;
-        this.status = status;
+        this.role = UserRole.LEARNER;
+        this.status = UserStatus.ACTIVE;
         this.createdAt = createdAt;
     }
 
@@ -84,8 +83,12 @@ public class User {
         return id;
     }
 
-    public Organization getOrganization() {
-        return organization;
+    public OAuthProvider getProvider() {
+        return provider;
+    }
+
+    public String getProviderUserId() {
+        return providerUserId;
     }
 
     public String getName() {
@@ -94,14 +97,6 @@ public class User {
 
     public String getEmail() {
         return email;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public String getDepartment() {
-        return department;
     }
 
     public UserRole getRole() {
@@ -126,9 +121,5 @@ public class User {
 
     public void updateLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
-    }
-
-    public void updateStatus(UserStatus status) {
-        this.status = status;
     }
 }
