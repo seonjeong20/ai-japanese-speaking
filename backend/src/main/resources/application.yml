@@ -10,6 +10,30 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  security:
+    oauth2:
+      client:
+        # 코드 교환·사용자 정보 조회에만 쓴다. oauth2Login()은 켜지 않는다.
+        # 키가 없어도 앱이 뜨도록 기본값을 비어 있지 않은 자리표시자(unset)로 둔다.
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:unset}
+            client-secret: ${GOOGLE_CLIENT_SECRET:unset}
+            scope: openid,email,profile
+          kakao:
+            client-id: ${KAKAO_REST_API_KEY:unset}
+            client-secret: ${KAKAO_CLIENT_SECRET:unset}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            # 등록 검증에 필요한 값일 뿐이다. 실제 코드 교환에는 요청의 redirectUri를 쓴다.
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: account_email,profile_nickname
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
   servlet:
     multipart:
       max-file-size: 20MB
